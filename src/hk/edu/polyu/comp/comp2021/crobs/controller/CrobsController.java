@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 
 /** Runs the shared command loop and dispatches the C2 commands. */
 public final class CrobsController {
@@ -19,6 +20,7 @@ public final class CrobsController {
     private final ScheduleService schedules;
     private final CLIView view;
     private final Consumer<String> otherCommands;
+    private final BiConsumer<String, Runnable> scheduleHistory;
 
     /**
      * @param context the shared Crobs session
@@ -34,10 +36,25 @@ public final class CrobsController {
      * @param otherCommands handler for user, room and booking commands
      */
     public CrobsController(CrobsContext context, CLIView view, Consumer<String> otherCommands) {
+        this(context, view, otherCommands, (line, replay) -> { });
+    }
+
+    /**
+     * @param context the shared Crobs session
+     * @param view output for command results and errors
+     * @param commands user, room, booking, and history handler
+     */
+    public CrobsController(CrobsContext context, CLIView view, ProjectCommands commands) {
+        this(context, view, commands::execute, commands::recordSchedule);
+    }
+
+    private CrobsController(CrobsContext context, CLIView view, Consumer<String> otherCommands,
+                            BiConsumer<String, Runnable> scheduleHistory) {
         this.context = Objects.requireNonNull(context);
         schedules = new ScheduleService(context);
         this.view = Objects.requireNonNull(view);
         this.otherCommands = Objects.requireNonNull(otherCommands);
+        this.scheduleHistory = scheduleHistory;
     }
 
     /**
@@ -50,15 +67,27 @@ public final class CrobsController {
         try (CommandLogger logger = new CommandLogger(context.getHtmlLogPath(), context.getTxtLogPath())) {
             String line;
             while ((line = input.readLine()) != null) {
-                String[] command = CommandParser.parse(line);
-                if (command.length > 0) {
-                    logger.log(line);
-                    if (!dispatch(command, line)) {
-                        return;
-                    }
+                if (!executeLine(line, logger)) {
+                    return;
                 }
             }
         }
+    }
+
+    /**
+     * Logs and dispatches one line for either user interface.
+     * @param line the submitted command
+     * @param logger the active session log
+     * @return whether the session should continue
+     * @throws IOException if either log write fails
+     */
+    public boolean executeLine(String line, CommandLogger logger) throws IOException {
+        String[] command = CommandParser.parse(line);
+        if (command.length == 0) {
+            return true;
+        }
+        logger.log(line);
+        return dispatch(command, line);
     }
 
     private boolean dispatch(String[] command, String line) {
@@ -66,6 +95,7 @@ public final class CrobsController {
             switch (command[0]) {
                 case "schedule":
                     showSchedule(command);
+                    scheduleHistory.accept(line, () -> showSchedule(command));
                     break;
                 case "quit":
                     if (command.length != 1) {

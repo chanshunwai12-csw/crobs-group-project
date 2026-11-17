@@ -3,6 +3,7 @@ package hk.edu.polyu.comp.comp2021.crobs.controller;
 import hk.edu.polyu.comp.comp2021.crobs.model.Booking;
 import hk.edu.polyu.comp.comp2021.crobs.model.BookingManager;
 import hk.edu.polyu.comp.comp2021.crobs.model.CROBS;
+import hk.edu.polyu.comp.comp2021.crobs.model.CommandResult;
 import hk.edu.polyu.comp.comp2021.crobs.model.Room;
 import hk.edu.polyu.comp.comp2021.crobs.model.TimeUtil;
 import hk.edu.polyu.comp.comp2021.crobs.model.User;
@@ -25,6 +26,7 @@ public final class ProjectCommands {
     private final roomManager rooms;
     private final BookingManager bookings;
     private final CLIView view;
+    private final CommandHistory history = new CommandHistory();
 
     /**
      * @param crobs shared application model
@@ -42,6 +44,51 @@ public final class ProjectCommands {
      */
     public void execute(String line) {
         String[] args = CommandParser.parse(line);
+        if (args.length == 0) {
+            return;
+        }
+        switch (args[0]) {
+            case "undo":
+                requireArgs(args, 1, "undo");
+                view.showMessage(history.undo(crobs));
+                return;
+            case "redo":
+                requireArgs(args, 1, "redo");
+                view.showMessage(history.redo(crobs));
+                return;
+            default:
+                break;
+        }
+        User actor = crobs.getCurrentUser();
+        boolean track = actor != null && changesData(args[0]);
+        CROBS.State before = track ? crobs.snapshot() : null;
+        if (dispatch(line, args) && track) {
+            history.record(actor.getId(), line, before, crobs.snapshot());
+        }
+    }
+
+    private static boolean changesData(String command) {
+        switch (command) {
+            case "addUser":
+            case "removeUser":
+            case "changeRole":
+            case "addRoom":
+            case "modifyRoom":
+            case "deleteRoom":
+            case "book":
+            case "modifyBooking":
+            case "deleteBooking":
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    void recordSchedule(String line, Runnable replay) {
+        history.recordSchedule(crobs.getCurrentUser().getId(), line, replay);
+    }
+
+    private boolean dispatch(String line, String[] args) {
         switch (args[0]) {
             case "addRoom":
                 requireArgs(args, ROOM_CHANGE_SIZE, "addRoom roomType capacity features");
@@ -95,8 +142,11 @@ public final class ProjectCommands {
                 view.showMessage(bookings.listBookings());
                 break;
             default:
-                view.showMessage(crobs.execute(line).getMessage());
+                CommandResult result = crobs.execute(line);
+                view.showMessage(result.getMessage());
+                return result.isSuccessful();
         }
+        return true;
     }
 
     private void search(String[] args) {

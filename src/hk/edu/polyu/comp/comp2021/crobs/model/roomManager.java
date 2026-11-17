@@ -4,6 +4,7 @@ package hk.edu.polyu.comp.comp2021.crobs.model;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
@@ -16,6 +17,25 @@ public class roomManager {
     public roomManager() {
         rooms = new ArrayList<>();
         nextRoomId = 1;
+    }
+
+    List<Room> snapshotRooms() {
+        List<Room> snapshot = new ArrayList<>();
+        for (Room room : rooms) {
+            snapshot.add(copyRoom(room));
+        }
+        return snapshot;
+    }
+
+    void restoreRooms(List<Room> snapshot) {
+        rooms.clear();
+        for (Room room : snapshot) {
+            rooms.add(copyRoom(room));
+        }
+    }
+
+    private static Room copyRoom(Room room) {
+        return new Room(room.getRoomId(), room.getRoomType(), room.getCapacity(), room.getFeatures());
     }
 
     public Room addRoom(String roomType, int capacity, String features) {

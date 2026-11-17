@@ -1,6 +1,7 @@
 package hk.edu.polyu.comp.comp2021.crobs.model;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /** Model facade for REQ2-REQ6. */
@@ -77,6 +78,47 @@ public final class CROBS {
     /** @return the conflict checker used by both search and booking */
     public ConflictChecker getConflictChecker() {
         return conflictChecker;
+    }
+
+    /** @return a snapshot of users, rooms, and bookings for command history */
+    public State snapshot() {
+        return new State(this);
+    }
+
+    /**
+     * Restores application data while preserving the active login and log files.
+     * @param state the snapshot to restore
+     */
+    public void restore(State state) {
+        User current = session.getCurrentUser();
+        users.clear();
+        state.users.forEach((id, user) -> users.put(id, copyUser(user)));
+        rooms.restoreRooms(state.rooms);
+        bookings.clear();
+        bookings.putAll(state.bookings);
+        User restored = current == null ? null : users.get(current.getId());
+        if (restored == null) {
+            session.logout();
+        } else {
+            session.login(restored);
+        }
+    }
+
+    private static User copyUser(User user) {
+        return new User(user.getId(), user.getName(), user.getRole());
+    }
+
+    /** Opaque snapshot. Booking objects are immutable. */
+    public static final class State {
+        private final Map<String, User> users = new LinkedHashMap<>();
+        private final List<Room> rooms;
+        private final Map<String, Booking> bookings;
+
+        private State(CROBS crobs) {
+            crobs.users.forEach((id, user) -> users.put(id, copyUser(user)));
+            rooms = crobs.rooms.snapshotRooms();
+            bookings = new LinkedHashMap<>(crobs.bookings);
+        }
     }
 
     /** REQ2: Adds a new regular user when the actor is an admin. */
