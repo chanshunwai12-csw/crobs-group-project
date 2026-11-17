@@ -4,7 +4,8 @@ package hk.edu.polyu.comp.comp2021.crobs.model;
 import java.util.HashSet;
 import java.util.Set;
 
-public class Room {
+/** A room and the attributes users can search for. */
+public final class Room {
 
     private final String roomId;
     private String roomType;

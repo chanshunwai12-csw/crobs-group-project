@@ -2,12 +2,15 @@
 package hk.edu.polyu.comp.comp2021.crobs.model;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 
+/** Maintains the rooms and their searchable features for one session. */
 public class roomManager {
 
-    private ArrayList<Room> rooms;
+    private final ArrayList<Room> rooms;
     private int nextRoomId;
 
     public roomManager() {
@@ -16,26 +19,8 @@ public class roomManager {
     }
 
     public Room addRoom(String roomType, int capacity, String features) {
-        Set<String> featureSet = new HashSet<>();
-
-        if (features == null) {
-            throw new IllegalArgumentException("Invalid features");
-        }
-
-        if (!features.isEmpty()) {
-            String[] parts = features.split(",", -1);
-
-            for (String feature : parts) {
-                if (feature.isEmpty() || feature.contains(" ")) {
-                    throw new IllegalArgumentException("Invalid features");
-                }
-                featureSet.add(feature);
-            }
-        }
-
-        String roomId = String.format("R%03d", nextRoomId);
-
-        Room room = new Room(roomId, roomType, capacity, featureSet);
+        String roomId = String.format(Locale.ROOT, "R%03d", nextRoomId);
+        Room room = new Room(roomId, roomType, capacity, parseFeatures(features));
 
         rooms.add(room);
         nextRoomId++;
@@ -57,8 +42,7 @@ public class roomManager {
     public ArrayList<Room> getAllRooms() {
         ArrayList<Room> result = new ArrayList<>(rooms);
 
-        result.sort((r1, r2) ->
-                r1.getRoomId().compareTo(r2.getRoomId()));
+        result.sort(Comparator.comparing(Room::getRoomId));
 
         return result;
     }
@@ -90,21 +74,7 @@ public class roomManager {
                 break;
 
             case "features":
-                Set<String> featureSet = new HashSet<>();
-
-                if (!newValue.isEmpty()) {
-                    String[] parts = newValue.split(",", -1);
-
-                    for (String feature : parts) {
-                        if (feature.isEmpty() || feature.contains(" ")) {
-                            throw new IllegalArgumentException("Invalid features");
-                        }
-
-                        featureSet.add(feature);
-                    }
-                }
-
-                room.setFeatures(featureSet);
+                room.setFeatures(parseFeatures(newValue));
                 break;
 
             default:
@@ -126,27 +96,10 @@ public class roomManager {
 
 
     public ArrayList<Room> searchRooms(int minCapacity, String features) {
-        if (minCapacity <= 0) {
+        if (minCapacity < 0) {
             throw new IllegalArgumentException("Invalid capacity");
         }
-
-        if (features == null) {
-            throw new IllegalArgumentException("Invalid features");
-        }
-
-        Set<String> requiredFeatures = new HashSet<>();
-
-        if (!features.isEmpty()) {
-            String[] parts = features.split(",", -1);
-
-            for (String feature : parts) {
-                if (feature.isEmpty() || feature.contains(" ")) {
-                    throw new IllegalArgumentException("Invalid features");
-                }
-
-                requiredFeatures.add(feature);
-            }
-        }
+        Set<String> requiredFeatures = parseFeatures(features);
 
         ArrayList<Room> result = new ArrayList<>();
 
@@ -157,9 +110,25 @@ public class roomManager {
             }
         }
 
-        result.sort((r1, r2) ->
-                r1.getRoomId().compareTo(r2.getRoomId()));
+        result.sort(Comparator.comparing(Room::getRoomId));
 
         return result;
+    }
+
+    private Set<String> parseFeatures(String features) {
+        if (features == null) {
+            throw new IllegalArgumentException("Invalid features");
+        }
+        Set<String> parsed = new HashSet<>();
+        if (!features.isEmpty()) {
+            for (String feature : features.split(",", -1)) {
+                if (feature.isEmpty()
+                        || feature.codePoints().anyMatch(c -> Character.isWhitespace(c) || Character.isSpaceChar(c))) {
+                    throw new IllegalArgumentException("Invalid features");
+                }
+                parsed.add(feature);
+            }
+        }
+        return parsed;
     }
 }
