@@ -19,12 +19,21 @@ public final class CROBS {
     private final String superadminId;
     private int nextUserNumber;
 
+    /**
+     * Creates a new CROBS instance with built-in booking cancellation.
+     */
     public CROBS() {
         this(userId -> {
             // The built-in booking manager handles cancellation.
         });
     }
 
+    /**
+     * Creates a new CROBS instance with an additional booking cancellation service.
+     *
+     * @param bookingCancellationService the service called when a user is removed
+     * @throws IllegalArgumentException if the service is {@code null}
+     */
     public CROBS(BookingCancellationService bookingCancellationService) {
         if (bookingCancellationService == null) {
             throw new IllegalArgumentException("Booking cancellation service must not be null.");
@@ -37,19 +46,36 @@ public final class CROBS {
         superadminId = generateUserId();
         users.put(superadminId, new User(superadminId, "Super Admin", Role.SUPERADMIN));
     }
-
+    /**
+     * Returns the ID of the built-in superadmin account.
+     *
+     * @return the superadmin user's ID
+     */
     public String getSuperadminId() {
         return superadminId;
     }
-
+    /**
+     * Gets the user signed in to the current session.
+     *
+     * @return the signed-in user, or {@code null} if nobody is signed in
+     */
     public User getCurrentUser() {
         return session.getCurrentUser();
     }
-
+    /**
+     * Looks up a user by ID.
+     *
+     * @param userId the ID to look up
+     * @return the matching user, or {@code null} if no user has that ID
+     */
     public User findUser(String userId) {
         return users.get(userId);
     }
-
+    /**
+     * Counts the user accounts currently registered in CROBS.
+     *
+     * @return the number of registered accounts, including the superadmin
+     */
     public int getUserCount() {
         return users.size();
     }
@@ -79,7 +105,12 @@ public final class CROBS {
         return conflictChecker;
     }
 
-    /** REQ2: Adds a new regular user when the actor is an admin. */
+    /**
+     * Adds a new regular user when the signed-in user has admin privileges.
+     *
+     * @param name the name of the new user
+     * @return the result of the request, including the new user ID on success
+     */
     public CommandResult addUser(String name) {
         CommandResult authorizationFailure = requireAdmin();
         if (authorizationFailure != null) {
@@ -95,7 +126,13 @@ public final class CROBS {
         return CommandResult.success("User created: " + userId + " (" + user.getName() + ", REGULAR)");
     }
 
-    /** REQ3: Removes a regular user and cancels all bookings owned by that user. */
+    /**
+     * Removes a regular user and cancels their bookings.
+     * The signed-in user must have admin privileges.
+     *
+     * @param targetUserId the ID of the regular user to remove
+     * @return the result indicating whether the removal succeeded
+     */
     public CommandResult removeUser(String targetUserId) {
         CommandResult authorizationFailure = requireAdmin();
         if (authorizationFailure != null) {
@@ -122,7 +159,13 @@ public final class CROBS {
         return CommandResult.success("User removed: " + targetUserId);
     }
 
-    /** REQ4: Changes another user's role when the actor is the superadmin. */
+    /**
+     * Changes another user's role when the signed-in user is the superadmin.
+     *
+     * @param targetUserId the ID of the user whose role will change
+     * @param newRoleText the requested role, {@code REGULAR} or {@code ADMIN}
+     * @return the result indicating whether the role change succeeded
+     */
     public CommandResult changeRole(String targetUserId, String newRoleText) {
         User actor = session.getCurrentUser();
         if (actor == null) {
@@ -154,7 +197,12 @@ public final class CROBS {
         return CommandResult.success("Role changed: " + targetUserId + " is now " + newRole);
     }
 
-    /** REQ5: Logs in as an existing user. */
+    /**
+     * Signs in as an existing user when no user is currently signed in.
+     *
+     * @param userId the ID of the account to sign in as
+     * @return the result indicating whether sign-in succeeded
+     */
     public CommandResult login(String userId) {
         if (session.isLoggedIn()) {
             return CommandResult.failure("A user is already logged in; logout first.");
@@ -169,7 +217,12 @@ public final class CROBS {
         return CommandResult.success("Logged in as " + user.getId() + " (" + user.getRole() + ")");
     }
 
-    /** REQ6: Logs out the current user. */
+    /**
+     * Signs out the current user and clears the session.
+     *
+     * @return a success result if a user was signed out, or a failure result
+     *         if nobody was signed in
+     */
     public CommandResult logout() {
         if (!session.isLoggedIn()) {
             return CommandResult.failure("No user is currently logged in.");
@@ -180,7 +233,13 @@ public final class CROBS {
         return CommandResult.success("Logged out: " + userId);
     }
 
-    /** Parses and executes the command syntax specified by REQ2-REQ6. */
+    /**
+     * Parses and executes a user-management or session command (REQ2–REQ6).
+     *
+     * @param commandLine the full command line, including any arguments
+     * @return the command result, or a failure result if the input is
+     *         blank, malformed, or unrecognized
+     */
     public CommandResult execute(String commandLine) {
         if (commandLine == null || commandLine.trim().isEmpty()) {
             return CommandResult.failure("Command must not be empty.");
