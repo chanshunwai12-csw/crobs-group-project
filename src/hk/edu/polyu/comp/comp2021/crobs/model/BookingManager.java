@@ -14,6 +14,12 @@ import java.util.Objects;
 import java.util.function.Predicate;
 
 /** Manages the bookings stored in a Crobs session. */
+/**
+ * Creates, changes, deletes and queries the bookings of one Crobs session.
+ *
+ * <p>All data lives in the shared {@link CROBS} instance. Business failures are
+ * reported with standard JDK exceptions so the controller can print one line.</p>
+ */
 public class BookingManager {
 
     private static final String NO_BOOKINGS = "You have no bookings.";
@@ -22,6 +28,7 @@ public class BookingManager {
     private final Clock clock;
 
     /** @param context the shared room, user and booking data */
+    /** @param context the shared user, room and booking data */
     public BookingManager(CROBS context) {
         this(context, Clock.systemDefaultZone());
     }
@@ -35,6 +42,19 @@ public class BookingManager {
         this.clock = Objects.requireNonNull(clock, "clock");
     }
 
+    /**
+     * Creates a booking for the current user.
+     *
+     * @param roomId    id of an existing room
+     * @param dateText  date in {@code yyyy-MM-dd}
+     * @param startText start time in {@code HH:mm}
+     * @param endText   end time in {@code HH:mm}
+     * @param purpose   purpose of the booking
+     * @return the new booking
+     * @throws SecurityException        if nobody is logged in
+     * @throws java.util.NoSuchElementException if the room does not exist
+     * @throws IllegalArgumentException if the input is malformed or the slot is taken
+     */
     public Booking book(String roomId, String dateText, String startText,
                         String endText, String purpose) {
         User user = requireLogin();
@@ -51,6 +71,20 @@ public class BookingManager {
         return booking;
     }
 
+    /**
+     * Updates a booking owned by the current user. The id and the owner never change.
+     *
+     * @param bookingId id of the booking to change
+     * @param roomId    new room id
+     * @param dateText  new date in {@code yyyy-MM-dd}
+     * @param startText new start time in {@code HH:mm}
+     * @param endText   new end time in {@code HH:mm}
+     * @param purpose   new purpose
+     * @return the updated booking
+     * @throws SecurityException        if nobody is logged in or the booking belongs to someone else
+     * @throws java.util.NoSuchElementException if the booking or the room does not exist
+     * @throws IllegalArgumentException if the input is malformed or the new slot is taken
+     */
     public Booking modifyBooking(String bookingId, String roomId, String dateText,
                                  String startText, String endText, String purpose) {
         User user = requireLogin();
@@ -69,6 +103,13 @@ public class BookingManager {
         return updated;
     }
 
+    /**
+     * Deletes a booking owned by the current user.
+     *
+     * @param bookingId id of the booking to delete
+     * @throws SecurityException        if nobody is logged in or the booking belongs to someone else
+     * @throws java.util.NoSuchElementException if the booking does not exist
+     */
     public void deleteBooking(String bookingId) {
         User user = requireLogin();
         Booking booking = requireBooking(bookingId);
@@ -76,6 +117,12 @@ public class BookingManager {
         context.getBookings().remove(bookingId);
     }
 
+    /**
+     * Lists the bookings of the current user, sorted by date and start time.
+     *
+     * @return one display line per booking, or a message when there is none
+     * @throws SecurityException if nobody is logged in
+     */
     public String listBookings() {
         User user = requireLogin();
         List<Booking> mine = bookingsMatching(booking ->
@@ -93,16 +140,35 @@ public class BookingManager {
         return text.toString();
     }
 
+    /**
+     * Returns a read-only snapshot of the bookings of one room.
+     *
+     * @param roomId id of the room
+     * @return an unmodifiable list, sorted by date and start time
+     * @throws java.util.NoSuchElementException if the room does not exist
+     */
     public List<Booking> getBookingsOfRoom(String roomId) {
         requireRoom(roomId);
         return bookingsMatching(booking -> booking.getRoomId().equals(roomId));
     }
 
+    /**
+     * Cancels every booking of one user. Used when a user is removed.
+     *
+     * @param userId id of the user being removed
+     * @return the number of cancelled bookings
+     */
     public int cancelAllBookingsForUser(String userId) {
         Objects.requireNonNull(userId, "userId");
         return removeBookings(booking -> booking.getOwnerUserId().equals(userId));
     }
 
+    /**
+     * Cancels the future bookings of one room. Used when a room is deleted.
+     *
+     * @param roomId id of the room being deleted
+     * @return the number of cancelled bookings
+     */
     public int cancelAllFutureBookingsOfRoomId(String roomId) {
         Objects.requireNonNull(roomId, "roomId");
         LocalDateTime now = LocalDateTime.now(clock);
