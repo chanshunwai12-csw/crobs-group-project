@@ -1,5 +1,6 @@
 package hk.edu.polyu.comp.comp2021.crobs.model;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -12,14 +13,26 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.function.Predicate;
 
+/** Manages the bookings stored in a Crobs session. */
 public class BookingManager {
 
     private static final String NO_BOOKINGS = "You have no bookings.";
 
     private final CROBS context;
+    private final Clock clock;
 
+    /** @param context the shared room, user and booking data */
     public BookingManager(CROBS context) {
+        this(context, Clock.systemDefaultZone());
+    }
+
+    /**
+     * @param context the shared room, user and booking data
+     * @param clock time source for determining which bookings are in the future
+     */
+    BookingManager(CROBS context, Clock clock) {
         this.context = Objects.requireNonNull(context, "context");
+        this.clock = Objects.requireNonNull(clock, "clock");
     }
 
     public Booking book(String roomId, String dateText, String startText,
@@ -32,7 +45,7 @@ public class BookingManager {
         TimeUtil.validateTimeRange(start, end);
         requireValidPurpose(purpose);
         requireNoConflict(roomId, date, start, end, null);
-        Booking booking = new Booking(BookingIds.next(context.getBookings().keySet()),
+        Booking booking = new Booking(context.nextBookingId(),
                 user.getId(), roomId, date, start, end, purpose);
         context.getBookings().put(booking.getBookingId(), booking);
         return booking;
@@ -92,9 +105,9 @@ public class BookingManager {
 
     public int cancelAllFutureBookingsOfRoomId(String roomId) {
         Objects.requireNonNull(roomId, "roomId");
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(clock);
         return removeBookings(booking -> booking.getRoomId().equals(roomId)
-                && LocalDateTime.of(booking.getDate(), booking.getEndTime()).isAfter(now));
+                && LocalDateTime.of(booking.getDate(), booking.getStartTime()).isAfter(now));
     }
 
     private User requireLogin() {

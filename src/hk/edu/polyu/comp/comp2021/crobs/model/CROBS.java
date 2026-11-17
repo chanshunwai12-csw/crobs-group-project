@@ -13,17 +13,15 @@ public final class CROBS {
     private final BookingCancellationService bookingCancellationService;
     private final roomManager rooms = new roomManager();
     private final Map<String, Booking> bookings = new LinkedHashMap<>();
+    private final BookingIds bookingIds = new BookingIds();
     private final ConflictChecker conflictChecker = new ConflictChecker(bookings.values());
     private final BookingManager bookingManager = new BookingManager(this);
     private final String superadminId;
     private int nextUserNumber;
 
     public CROBS() {
-        this(new BookingCancellationService() {
-            @Override
-            public void cancelAllBookingsForUser(String userId) {
-                // There are no bookings until the booking subsystem is connected.
-            }
+        this(userId -> {
+            // The built-in booking manager handles cancellation.
         });
     }
 
@@ -69,6 +67,11 @@ public final class CROBS {
     /** @return the live bookings keyed by ID */
     public Map<String, Booking> getBookings() {
         return bookings;
+    }
+
+    /** @return a new booking ID reserved for this session */
+    String nextBookingId() {
+        return bookingIds.next(bookings.keySet());
     }
 
     /** @return the conflict checker used by both search and booking */
@@ -183,10 +186,9 @@ public final class CROBS {
             return CommandResult.failure("Command must not be empty.");
         }
 
-        String trimmed = commandLine.trim();
-        int firstSpace = trimmed.indexOf(' ');
-        String command = firstSpace < 0 ? trimmed : trimmed.substring(0, firstSpace);
-        String arguments = firstSpace < 0 ? "" : trimmed.substring(firstSpace + 1).trim();
+        String[] tokens = commandLine.trim().split("\\s+", 2);
+        String command = tokens[0];
+        String arguments = tokens.length == 1 ? "" : tokens[1];
 
         UserCommand userCommand;
         if ("addUser".equals(command)) {
@@ -243,6 +245,6 @@ public final class CROBS {
     }
 
     private boolean isOneArgument(String arguments) {
-        return !arguments.isEmpty() && arguments.indexOf(' ') < 0;
+        return arguments.matches("\\S+");
     }
 }

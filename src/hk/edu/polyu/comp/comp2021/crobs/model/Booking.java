@@ -92,14 +92,14 @@ public class Booking implements Comparable<Booking>, BookingInfo {
 
     @Override
     public int compareTo(Booking other) {
-        int byDate = date.compareTo(other.date);
+        int byDate = date.compareTo(other.getDate());
         if (byDate != 0) {
             return byDate;
         }
-        int byStart = startTime.compareTo(other.startTime);
+        int byStart = startTime.compareTo(other.getStartTime());
         if (byStart != 0) {
             return byStart;
         }
-        return bookingId.compareTo(other.bookingId);
+        return bookingId.compareTo(other.getBookingId());
     }
 }

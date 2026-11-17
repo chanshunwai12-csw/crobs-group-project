@@ -1,26 +1,23 @@
 package hk.edu.polyu.comp.comp2021.crobs.model;
 
-import java.util.Collection;
+import java.util.Locale;
+import java.util.Set;
 
-public final class BookingIds {
+/** Allocates booking IDs for one session. */
+final class BookingIds {
 
-    private static final String PREFIX = "B";
-    private static final int WIDTH = 3;
+    private static final String FORMAT = "B%03d";
+    private long nextNumber = 1;
 
-    private BookingIds() {
-    }
-
-    public static String next(Collection<String> existingIds) {
-        int max = 0;
-        for (String id : existingIds) {
-            if (id != null && id.startsWith(PREFIX)) {
-                try {
-                    max = Math.max(max, Integer.parseInt(id.substring(PREFIX.length())));
-                } catch (NumberFormatException ignored) {
-                    max = max;
-                }
-            }
-        }
-        return PREFIX + String.format("%0" + WIDTH + "d", max + 1);
+    /**
+     * @param existingIds IDs of bookings already in the model
+     * @return the next unused booking ID
+     */
+    String next(Set<String> existingIds) {
+        String id;
+        do {
+            id = String.format(Locale.ROOT, FORMAT, nextNumber++);
+        } while (existingIds.contains(id));
+        return id;
     }
 }
