@@ -1,7 +1,7 @@
 package hk.edu.polyu.comp.comp2021.crobs.model;
 
 /** A user account in Crobs. */
-public final class User {
+public final class User implements SessionUser {
     private final String id;
     private final String name;
     private Role role;
@@ -23,6 +23,18 @@ public final class User {
 
     public String getId() {
         return id;
+    }
+
+    /** @return the account ID used to check booking ownership */
+    @Override
+    public String getUserId() {
+        return getId();
+    }
+
+    /** @return whether the current role can see every booking owner */
+    @Override
+    public boolean isAdmin() {
+        return getRole().isAdmin();
     }
 
     public String getName() {

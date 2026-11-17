@@ -161,12 +161,13 @@ class CROBSTest {
 
     @Test
     void commandParserSupportsRequiredSyntaxAndMalformedCommands() {
-        assertTrue(crobs.execute("login " + crobs.getSuperadminId()).isSuccessful());
+        assertTrue(crobs.execute("login\t" + crobs.getSuperadminId()).isSuccessful());
         assertTrue(crobs.execute("addUser Alice Chan").isSuccessful());
         assertTrue(crobs.execute("changeRole U0002 admin").isSuccessful());
         assertTrue(crobs.execute("logout").isSuccessful());
 
         assertFalse(crobs.execute("removeUser").isSuccessful());
+        assertFalse(crobs.execute("removeUser U0002\textra").isSuccessful());
         assertFalse(crobs.execute("changeRole U0002").isSuccessful());
         assertFalse(crobs.execute("logout extra").isSuccessful());
         assertFalse(crobs.execute("unknown").isSuccessful());
