@@ -31,7 +31,9 @@ public final class CROBS {
     /** Next number used to allocate an account ID. */
     private int nextUserNumber;
 
-    /** Creates an empty application with its unique superadmin and built-in booking cancellation. */
+    /**
+     * Creates a new CROBS instance with built-in booking cancellation.
+     */
     public CROBS() {
         this(userId -> {
             // The built-in booking manager handles cancellation.
@@ -39,9 +41,10 @@ public final class CROBS {
     }
 
     /**
-     * Creates an application with an additional cancellation callback.
-     * @param bookingCancellationService the callback run before a regular user is removed
-     * @throws IllegalArgumentException if the callback is {@code null}
+     * Creates a new CROBS instance with an additional booking cancellation service.
+     *
+     * @param bookingCancellationService the service called when a user is removed
+     * @throws IllegalArgumentException if the service is {@code null}
      */
     public CROBS(BookingCancellationService bookingCancellationService) {
         if (bookingCancellationService == null) {
@@ -57,33 +60,37 @@ public final class CROBS {
     }
 
     /**
-     * Identifies the automatically created superadmin.
-     * @return the unique superadmin account ID
+     * Returns the ID of the built-in superadmin account.
+     *
+     * @return the superadmin user's ID
      */
     public String getSuperadminId() {
         return superadminId;
     }
 
     /**
-     * Reads the current login state.
-     * @return the current account, or {@code null} when logged out
+     * Gets the user signed in to the current session.
+     *
+     * @return the signed-in user, or {@code null} if nobody is signed in
      */
     public User getCurrentUser() {
         return session.getCurrentUser();
     }
 
     /**
-     * Looks up an account by ID.
-     * @param userId the account ID to look up
-     * @return the matching account, or {@code null} if it does not exist
+     * Looks up a user by ID.
+     *
+     * @param userId the ID to look up
+     * @return the matching user, or {@code null} if no user has that ID
      */
     public User findUser(String userId) {
         return users.get(userId);
     }
 
     /**
-     * Counts the accounts currently stored in this session.
-     * @return the number of accounts, including the superadmin
+     * Counts the user accounts currently registered in CROBS.
+     *
+     * @return the number of registered accounts, including the superadmin
      */
     public int getUserCount() {
         return users.size();
@@ -130,9 +137,10 @@ public final class CROBS {
     }
 
     /**
-     * Adds a regular user when the current account has admin privileges.
-     * @param name the new user's display name
-     * @return confirmation with the new ID, or an authorization or validation error
+     * Adds a new regular user when the signed-in user has admin privileges.
+     *
+     * @param name the name of the new user
+     * @return the result of the request, including the new user ID on success
      */
     public CommandResult addUser(String name) {
         CommandResult authorizationFailure = requireAdmin();
@@ -150,9 +158,11 @@ public final class CROBS {
     }
 
     /**
-     * Removes a regular user and cancels all bookings owned by that user.
-     * @param targetUserId the regular account to remove
-     * @return confirmation, or an authorization, lookup or cancellation error
+     * Removes a regular user and cancels their bookings.
+     * The signed-in user must have admin privileges.
+     *
+     * @param targetUserId the ID of the regular user to remove
+     * @return the result indicating whether the removal succeeded
      */
     public CommandResult removeUser(String targetUserId) {
         CommandResult authorizationFailure = requireAdmin();
@@ -183,10 +193,11 @@ public final class CROBS {
     }
 
     /**
-     * Changes another account's role after checking superadmin privileges.
-     * @param targetUserId the account whose role should change
-     * @param newRoleText the replacement regular or admin role
-     * @return confirmation, or an authorization, lookup or role validation error
+     * Changes another user's role when the signed-in user is the superadmin.
+     *
+     * @param targetUserId the ID of the user whose role will change
+     * @param newRoleText the requested role, {@code REGULAR} or {@code ADMIN}
+     * @return the result indicating whether the role change succeeded
      */
     public CommandResult changeRole(String targetUserId, String newRoleText) {
         User actor = session.getCurrentUser();
@@ -220,9 +231,10 @@ public final class CROBS {
     }
 
     /**
-     * Logs in as an existing account when the session is logged out.
-     * @param userId the existing account ID
-     * @return confirmation, or an error if the ID is unknown or a login is already active
+     * Signs in as an existing user when no user is currently signed in.
+     *
+     * @param userId the ID of the account to sign in as
+     * @return the result indicating whether sign-in succeeded
      */
     public CommandResult login(String userId) {
         if (session.isLoggedIn()) {
@@ -239,8 +251,10 @@ public final class CROBS {
     }
 
     /**
-     * Ends the current login.
-     * @return confirmation, or an error if nobody is logged in
+     * Signs out the current user and clears the session.
+     *
+     * @return a success result if a user was signed out, or a failure result
+     *         if nobody was signed in
      */
     public CommandResult logout() {
         User currentUser = session.getCurrentUser();
@@ -254,9 +268,11 @@ public final class CROBS {
     }
 
     /**
-     * Parses and executes the user commands specified by REQ2-REQ6.
-     * @param commandLine the complete command with its arguments
-     * @return the operation result or a syntax error
+     * Parses and executes a user-management or session command (REQ2–REQ6).
+     *
+     * @param commandLine the full command line, including any arguments
+     * @return the command result, or a failure result if the input is
+     *         blank, malformed, or unrecognized
      */
     public CommandResult execute(String commandLine) {
         if (commandLine == null || commandLine.trim().isEmpty()) {

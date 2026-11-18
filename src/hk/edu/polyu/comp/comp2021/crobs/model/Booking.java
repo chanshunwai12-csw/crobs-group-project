@@ -4,7 +4,12 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Objects;
 
-/** Immutable reservation with an owner, room, date, time slot and purpose. */
+/**
+ * A single room booking.
+ *
+ * <p>Instances are immutable. The natural order is date, then start time,
+ * then booking id.</p>
+ */
 public class Booking implements Comparable<Booking>, BookingInfo {
 
     /** Identifier of the represented reservation. */
@@ -112,15 +117,6 @@ public class Booking implements Comparable<Booking>, BookingInfo {
      */
     public String describe() {
         return bookingId + " | " + roomId + " | " + date + " " + startTime + "-" + endTime + " | " + purpose;
-    }
-
-    /**
-     * Formats the reservation with its owner for authorized administrative callers.
-     * @return the owner ID together with the reservation details
-     */
-    public String describeWithOwner() {
-        return bookingId + " | " + ownerUserId + " | " + roomId + " | " + date
-                + " " + startTime + "-" + endTime + " | " + purpose;
     }
 
     /**
