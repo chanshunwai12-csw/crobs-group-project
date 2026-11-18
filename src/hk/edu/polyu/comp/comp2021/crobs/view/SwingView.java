@@ -29,6 +29,21 @@ import java.util.List;
 
 /** Graphical command forms backed by the same controller as the CLI. */
 public final class SwingView {
+    /** Default gap between larger window sections. */
+    private static final int SECTION_GAP = 8;
+    /** Gap between labels in a command form. */
+    private static final int FIELD_GAP = 5;
+    /** Smaller gap between controls in the header. */
+    private static final int HEADER_GAP = 4;
+    /** Empty border around the window content. */
+    private static final int WINDOW_PADDING = 12;
+    /** Initial number of visible output rows. */
+    private static final int OUTPUT_ROWS = 16;
+    /** Initial number of visible output columns. */
+    private static final int OUTPUT_COLUMNS = 58;
+    /**
+     * Commands and parameter labels presented by the graphical form.
+     */
     private static final String[] SYNTAX = {
         "login userID", "logout", "addUser name", "removeUser targetUserID",
         "changeRole targetUserID newRole", "addRoom roomType capacity features",
@@ -40,17 +55,53 @@ public final class SwingView {
         "undo", "redo", "quit"
     };
 
+    /**
+     * Top-level session window owned by this view.
+     */
     private final JFrame frame = new JFrame("Crobs Room Booking");
+    /**
+     * Selector for command names and their parameter labels.
+     */
     private final JComboBox<String> commands = new JComboBox<>(SYNTAX);
-    private final JPanel fields = new JPanel(new GridLayout(0, 2, 8, 5));
+    /**
+     * Container rebuilt with the selected command parameters.
+     */
+    private final JPanel fields = new JPanel(new GridLayout(0, 2, SECTION_GAP, FIELD_GAP));
+    /**
+     * Input controls in command argument order.
+     */
     private final List<JTextField> inputs = new ArrayList<>();
-    private final JTextArea output = new JTextArea(16, 58);
+    /**
+     * Scrollable transcript of commands, results and errors.
+     */
+    private final JTextArea output = new JTextArea(OUTPUT_ROWS, OUTPUT_COLUMNS);
+    /**
+     * Current login ID and role, or a signed-out message.
+     */
     private final JLabel session = new JLabel();
+    /**
+     * Buffer receiving output from the shared command controller.
+     */
     private final StringWriter response = new StringWriter();
+    /**
+     * Shared application model used by the graphical session.
+     */
     private final CROBS crobs;
+    /**
+     * HTML and text command logs for this session.
+     */
     private final CommandLogger logger;
+    /**
+     * Shared validation and command dispatch for both interfaces.
+     */
     private final CrobsController controller;
 
+    /**
+     * Connects a graphical window to the shared model and command logs.
+     * @param context session data and log destinations
+     * @param crobs the shared model
+     * @throws IOException if either command log cannot be opened
+     */
     private SwingView(CrobsContext context, CROBS crobs) throws IOException {
         this.crobs = crobs;
         logger = new CommandLogger(context.getHtmlLogPath(), context.getTxtLogPath());
@@ -67,13 +118,21 @@ public final class SwingView {
      */
     public static void open(CrobsContext context, CROBS crobs) {
         try {
-            new SwingView(context, crobs).frame.setVisible(true);
+            new SwingView(context, crobs).show();
         } catch (IOException exception) {
             JOptionPane.showMessageDialog(null, exception.getMessage(), "Session error",
                     JOptionPane.ERROR_MESSAGE);
         }
     }
 
+    /** Displays the initialized session window. */
+    private void show() {
+        frame.setVisible(true);
+    }
+
+    /**
+     * Builds the command form, transcript and close action on the event dispatch thread.
+     */
     private void buildWindow() {
         frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         frame.addWindowListener(new WindowAdapter() {
@@ -83,10 +142,10 @@ public final class SwingView {
             }
         });
 
-        JPanel content = new JPanel(new BorderLayout(8, 8));
-        content.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
-        JPanel form = new JPanel(new BorderLayout(8, 8));
-        JPanel header = new JPanel(new GridLayout(0, 1, 4, 4));
+        JPanel content = new JPanel(new BorderLayout(SECTION_GAP, SECTION_GAP));
+        content.setBorder(BorderFactory.createEmptyBorder(WINDOW_PADDING, WINDOW_PADDING, WINDOW_PADDING, WINDOW_PADDING));
+        JPanel form = new JPanel(new BorderLayout(SECTION_GAP, SECTION_GAP));
+        JPanel header = new JPanel(new GridLayout(0, 1, HEADER_GAP, HEADER_GAP));
         header.add(session);
         JLabel commandLabel = new JLabel("Command");
         commandLabel.setLabelFor(commands);
@@ -115,10 +174,19 @@ public final class SwingView {
         frame.setLocationRelativeTo(null);
     }
 
+    /**
+     * Rebuilds labeled input controls for the selected command.
+     */
     private void updateFields() {
         fields.removeAll();
         inputs.clear();
-        String[] parameters = ((String) commands.getSelectedItem()).split(" ");
+        String selected = (String) commands.getSelectedItem();
+        if (selected == null) {
+            fields.revalidate();
+            fields.repaint();
+            return;
+        }
+        String[] parameters = selected.split(" ");
         for (int index = 1; index < parameters.length; index++) {
             JLabel label = new JLabel(parameters[index]);
             JTextField input = new JTextField();
@@ -136,8 +204,15 @@ public final class SwingView {
         fields.repaint();
     }
 
+    /**
+     * Validates form values and submits a command to the shared controller.
+     */
     private void submit() {
-        String[] syntax = ((String) commands.getSelectedItem()).split(" ");
+        String selected = (String) commands.getSelectedItem();
+        if (selected == null) {
+            return;
+        }
+        String[] syntax = selected.split(" ");
         StringBuilder line = new StringBuilder(syntax[0]);
         for (int index = 0; index < inputs.size(); index++) {
             String value = inputs.get(index).getText().trim();
@@ -153,6 +228,10 @@ public final class SwingView {
         run(line.toString());
     }
 
+    /**
+     * Executes a graphical command and closes the window after a successful quit.
+     * @param line the complete command line to log and execute
+     */
     private void run(String line) {
         output.append("> " + line + "\n");
         try {
@@ -173,6 +252,9 @@ public final class SwingView {
         }
     }
 
+    /**
+     * Refreshes the displayed login after data or authentication changes.
+     */
     private void updateSession() {
         User user = crobs.getCurrentUser();
         session.setText(user == null ? "Signed out" : "Signed in as " + user.getId() + " (" + user.getRole() + ")");

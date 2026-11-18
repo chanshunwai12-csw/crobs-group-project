@@ -4,16 +4,41 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Objects;
 
+/**
+ * A single room booking.
+ *
+ * <p>Instances are immutable. The natural order is date, then start time,
+ * then booking id.</p>
+ */
 public class Booking implements Comparable<Booking>, BookingInfo {
 
+    /** Identifier of the represented reservation. */
     private final String bookingId;
+    /** Account ID of the reservation owner. */
     private final String ownerUserId;
+    /** Identifier of the reserved or represented room. */
     private final String roomId;
+    /** Calendar date of the reservation. */
     private final LocalDate date;
+    /** Inclusive beginning of the reservation time slot. */
     private final LocalTime startTime;
+    /** Exclusive end of the reservation time slot. */
     private final LocalTime endTime;
+    /** Purpose displayed with the reservation. */
     private final String purpose;
 
+    /**
+     * Creates a reservation whose end time is after its start time.
+     * @param bookingId the reservation's unique ID
+     * @param ownerUserId the owning account ID
+     * @param roomId the reserved room ID
+     * @param date the reservation date
+     * @param startTime the inclusive beginning of the slot
+     * @param endTime the exclusive end of the slot
+     * @param purpose the nonblank reservation purpose
+     * @throws NullPointerException if any argument is null
+     * @throws IllegalArgumentException if the purpose is blank or the time range is invalid
+     */
     public Booking(String bookingId, String ownerUserId, String roomId,
                    LocalDate date, LocalTime startTime, LocalTime endTime, String purpose) {
         this.bookingId = Objects.requireNonNull(bookingId, "bookingId");
@@ -31,26 +56,31 @@ public class Booking implements Comparable<Booking>, BookingInfo {
         }
     }
 
-    /**
-     *
-     * @return the unique booking id
-     */
+    /** {@inheritDoc} */
     @Override
     public String getBookingId() {
         return bookingId;
     }
 
+    /**
+     * Identifies the account that owns this reservation.
+     * @return the owner account ID
+     */
     public String getOwnerUserId() {
         return ownerUserId;
     }
 
-    /** @return the owner ID used by the schedule */
+    /** {@inheritDoc} */
     @Override
     public String getUserId() {
         return getOwnerUserId();
     }
 
-    /** @return whether this booking is active while present in the booking map */
+    /**
+     * Reports that a reservation in the live store participates in availability queries.
+     * Cancellation removes the reservation from that store.
+     * @return {@code true}
+     */
     @Override
     public boolean isActive() {
         return true;
@@ -81,15 +111,20 @@ public class Booking implements Comparable<Booking>, BookingInfo {
         return purpose;
     }
 
+    /**
+     * Formats the reservation for its owner's booking list.
+     * @return the ID, room, date, time range and purpose
+     */
     public String describe() {
         return bookingId + " | " + roomId + " | " + date + " " + startTime + "-" + endTime + " | " + purpose;
     }
 
-    public String describeWithOwner() {
-        return bookingId + " | " + ownerUserId + " | " + roomId + " | " + date
-                + " " + startTime + "-" + endTime + " | " + purpose;
-    }
-
+    /**
+     * Orders reservations by date, start time and then booking ID.
+     * @param other the reservation to compare with
+     * @return a negative, zero or positive result according to the ordering
+     * @throws NullPointerException if the other reservation is null
+     */
     @Override
     public int compareTo(Booking other) {
         int byDate = date.compareTo(other.getDate());

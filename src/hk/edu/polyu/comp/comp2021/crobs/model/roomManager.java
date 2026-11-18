@@ -4,40 +4,32 @@ package hk.edu.polyu.comp.comp2021.crobs.model;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.List;
 
 /** Maintains the rooms and their searchable features for one session. */
 public class roomManager {
 
+    /** Room collection belonging to this session. */
     private final ArrayList<Room> rooms;
+    /** Next number used to allocate a room ID. */
     private int nextRoomId;
 
+    /** Creates an empty room collection with its own sequence of room IDs. */
     public roomManager() {
         rooms = new ArrayList<>();
         nextRoomId = 1;
     }
 
-    List<Room> snapshotRooms() {
-        List<Room> snapshot = new ArrayList<>();
-        for (Room room : rooms) {
-            snapshot.add(copyRoom(room));
-        }
-        return snapshot;
-    }
-
-    void restoreRooms(List<Room> snapshot) {
-        rooms.clear();
-        for (Room room : snapshot) {
-            rooms.add(copyRoom(room));
-        }
-    }
-
-    private static Room copyRoom(Room room) {
-        return new Room(room.getRoomId(), room.getRoomType(), room.getCapacity(), room.getFeatures());
-    }
-
+    /**
+     * Adds a validated room and allocates its unique ID.
+     * @param roomType one of the four supported room types
+     * @param capacity the positive maximum number of occupants
+     * @param features a comma-separated list of feature names, or an empty string
+     * @return the new room
+     * @throws IllegalArgumentException if the type, capacity or feature list is invalid
+     */
     public Room addRoom(String roomType, int capacity, String features) {
         String roomId = String.format(Locale.ROOT, "R%03d", nextRoomId);
         Room room = new Room(roomId, roomType, capacity, parseFeatures(features));
@@ -49,6 +41,11 @@ public class roomManager {
     }
 
 
+    /**
+     * Finds a room by its ID.
+     * @param roomId the requested room ID
+     * @return the matching room, or {@code null} if none exists
+     */
     public Room getRoom(String roomId) {
         for (Room room : rooms) {
             if (room.getRoomId().equals(roomId)) {
@@ -59,6 +56,10 @@ public class roomManager {
     }
 
 
+    /**
+     * Lists the rooms in ascending ID order.
+     * @return an independent list containing the current room objects
+     */
     public ArrayList<Room> getAllRooms() {
         ArrayList<Room> result = new ArrayList<>(rooms);
 
@@ -68,6 +69,13 @@ public class roomManager {
     }
 
 
+    /**
+     * Updates a single room attribute after validating the replacement value.
+     * @param roomId the existing room ID
+     * @param field roomType, capacity or features
+     * @param newValue the replacement value
+     * @throws IllegalArgumentException if the room is unknown or the field or value is invalid
+     */
     public void modifyRoom(String roomId, String field, String newValue) {
         Room room = getRoom(roomId);
 
@@ -103,6 +111,12 @@ public class roomManager {
     }
 
 
+    /**
+     * Removes a room from the room collection.
+     * The application command handler also cancels its future bookings.
+     * @param roomId the ID to remove
+     * @return whether the room existed and was removed
+     */
     public boolean deleteRoom(String roomId) {
         Room room = getRoom(roomId);
 
@@ -115,6 +129,14 @@ public class roomManager {
     }
 
 
+    /**
+     * Finds rooms meeting a minimum capacity and containing all requested features.
+     * Time availability is checked by the command handler.
+     * @param minCapacity the nonnegative minimum capacity
+     * @param features a comma-separated feature list, or an empty string
+     * @return matching rooms in ascending ID order
+     * @throws IllegalArgumentException if the minimum capacity or feature list is invalid
+     */
     public ArrayList<Room> searchRooms(int minCapacity, String features) {
         if (minCapacity < 0) {
             throw new IllegalArgumentException("Invalid capacity");
@@ -135,6 +157,12 @@ public class roomManager {
         return result;
     }
 
+    /**
+     * Converts a command's comma-separated features into a set.
+     * @param features the feature list, which may be empty
+     * @return the distinct feature names
+     * @throws IllegalArgumentException if the list is null or contains empty or whitespace-bearing names
+     */
     private Set<String> parseFeatures(String features) {
         if (features == null) {
             throw new IllegalArgumentException("Invalid features");
@@ -150,5 +178,37 @@ public class roomManager {
             }
         }
         return parsed;
+    }
+
+    /**
+     * Copies rooms for history without exposing their mutable attributes.
+     * @return independent room values in their current order
+     */
+    List<Room> snapshotRooms() {
+        List<Room> snapshot = new ArrayList<>();
+        for (Room room : rooms) {
+            snapshot.add(copyRoom(room));
+        }
+        return snapshot;
+    }
+
+    /**
+     * Restores room values while keeping the ID allocator monotonic.
+     * @param snapshot rooms captured before or after a successful command
+     */
+    void restoreRooms(List<Room> snapshot) {
+        rooms.clear();
+        for (Room room : snapshot) {
+            rooms.add(copyRoom(room));
+        }
+    }
+
+    /**
+     * Copies a room and its feature set.
+     * @param room the original room
+     * @return a room whose mutable attributes are independent
+     */
+    private static Room copyRoom(Room room) {
+        return new Room(room.getRoomId(), room.getRoomType(), room.getCapacity(), room.getFeatures());
     }
 }

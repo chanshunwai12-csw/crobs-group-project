@@ -105,6 +105,13 @@ class BookingQueriesTest {
     }
 
     @Test
+    void scheduleRejectsANullStartDateEvenWhenThereAreNoBookings() {
+        viewer = user(OWN_ID, false);
+        ScheduleService schedules = new ScheduleService(context());
+        assertThrows(NullPointerException.class, () -> schedules.schedule(ROOM, null));
+    }
+
+    @Test
     void controllerLogsErrorsAndQuitAndDoesNotDispatchLaterInput() throws Exception {
         populateSchedule();
         viewer = user(OWN_ID, false);
