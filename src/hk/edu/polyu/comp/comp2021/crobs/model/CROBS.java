@@ -3,20 +3,32 @@ package hk.edu.polyu.comp.comp2021.crobs.model;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/** Model facade for REQ2-REQ6. */
+/** Owns session data and enforces the user-management permissions for REQ2-REQ6. */
 public final class CROBS {
+    /** Prefix used for automatically generated account IDs. */
     private static final String USER_ID_PREFIX = "U";
+    /** Minimum number of digits in an account ID. */
     private static final int USER_ID_WIDTH = 4;
 
+    /** Accounts keyed by their unique IDs. */
     private final Map<String, User> users;
+    /** Current login state for this application instance. */
     private final Session session;
+    /** Additional cancellation callback run before account removal. */
     private final BookingCancellationService bookingCancellationService;
+    /** Room collection belonging to this session. */
     private final roomManager rooms = new roomManager();
+    /** Live reservations used by operations and availability queries. */
     private final Map<String, Booking> bookings = new LinkedHashMap<>();
+    /** Booking ID allocator retained for the entire session. */
     private final BookingIds bookingIds = new BookingIds();
+    /** Shared availability checker over the live booking collection. */
     private final ConflictChecker conflictChecker = new ConflictChecker(bookings.values());
+    /** Reservation operations connected to this application instance. */
     private final BookingManager bookingManager = new BookingManager(this);
+    /** ID of the unique automatically created superadmin. */
     private final String superadminId;
+    /** Next number used to allocate an account ID. */
     private int nextUserNumber;
 
     /**
@@ -38,7 +50,7 @@ public final class CROBS {
         if (bookingCancellationService == null) {
             throw new IllegalArgumentException("Booking cancellation service must not be null.");
         }
-        users = new LinkedHashMap<String, User>();
+        users = new LinkedHashMap<>();
         session = new Session();
         this.bookingCancellationService = bookingCancellationService;
         nextUserNumber = 1;
@@ -46,6 +58,7 @@ public final class CROBS {
         superadminId = generateUserId();
         users.put(superadminId, new User(superadminId, "Super Admin", Role.SUPERADMIN));
     }
+
     /**
      * Returns the ID of the built-in superadmin account.
      *
@@ -54,6 +67,7 @@ public final class CROBS {
     public String getSuperadminId() {
         return superadminId;
     }
+
     /**
      * Gets the user signed in to the current session.
      *
@@ -62,6 +76,7 @@ public final class CROBS {
     public User getCurrentUser() {
         return session.getCurrentUser();
     }
+
     /**
      * Looks up a user by ID.
      *
@@ -71,6 +86,7 @@ public final class CROBS {
     public User findUser(String userId) {
         return users.get(userId);
     }
+
     /**
      * Counts the user accounts currently registered in CROBS.
      *
@@ -80,27 +96,42 @@ public final class CROBS {
         return users.size();
     }
 
-    /** @return the room manager for this session */
+    /**
+     * Supplies access to this session's room data.
+     * @return the room manager for this session
+     */
     public roomManager getRoomManager() {
         return rooms;
     }
 
-    /** @return the booking manager for this session */
+    /**
+     * Supplies the booking operations connected to this session.
+     * @return the booking manager for this session
+     */
     public BookingManager getBookingManager() {
         return bookingManager;
     }
 
-    /** @return the live bookings keyed by ID */
+    /**
+     * Supplies the shared booking store used by the booking manager and queries.
+     * @return the live bookings keyed by ID
+     */
     public Map<String, Booking> getBookings() {
         return bookings;
     }
 
-    /** @return a new booking ID reserved for this session */
+    /**
+     * Reserves a booking ID that will not be reused by this allocator.
+     * @return a new booking ID reserved for this session
+     */
     String nextBookingId() {
         return bookingIds.next(bookings.keySet());
     }
 
-    /** @return the conflict checker used by both search and booking */
+    /**
+     * Supplies availability checking against the live bookings.
+     * @return the conflict checker used by both search and booking
+     */
     public ConflictChecker getConflictChecker() {
         return conflictChecker;
     }
@@ -147,16 +178,18 @@ public final class CROBS {
             return CommandResult.failure("Only regular users can be removed.");
         }
 
+        int cancelledBookings;
         try {
             bookingCancellationService.cancelAllBookingsForUser(targetUserId);
-            bookingManager.cancelAllBookingsForUser(targetUserId);
+            cancelledBookings = bookingManager.cancelAllBookingsForUser(targetUserId);
         } catch (RuntimeException exception) {
             return CommandResult.failure("Could not cancel the user's bookings: "
                     + exception.getMessage());
         }
 
         users.remove(targetUserId);
-        return CommandResult.success("User removed: " + targetUserId);
+        return CommandResult.success("User removed: " + targetUserId
+                + " (bookings cancelled: " + cancelledBookings + ")");
     }
 
     /**
@@ -224,11 +257,12 @@ public final class CROBS {
      *         if nobody was signed in
      */
     public CommandResult logout() {
-        if (!session.isLoggedIn()) {
+        User currentUser = session.getCurrentUser();
+        if (currentUser == null) {
             return CommandResult.failure("No user is currently logged in.");
         }
 
-        String userId = session.getCurrentUser().getId();
+        String userId = currentUser.getId();
         session.logout();
         return CommandResult.success("Logged out: " + userId);
     }
@@ -256,7 +290,7 @@ public final class CROBS {
             }
             userCommand = new UserCommand.AddUserCommand(arguments);
         } else if ("removeUser".equals(command)) {
-            if (!isOneArgument(arguments)) {
+            if (hasInvalidSingleArgument(arguments)) {
                 return CommandResult.failure("Usage: removeUser targetUserID");
             }
             userCommand = new UserCommand.RemoveUserCommand(arguments);
@@ -267,7 +301,7 @@ public final class CROBS {
             }
             userCommand = new UserCommand.ChangeRoleCommand(parts[0], parts[1]);
         } else if ("login".equals(command)) {
-            if (!isOneArgument(arguments)) {
+            if (hasInvalidSingleArgument(arguments)) {
                 return CommandResult.failure("Usage: login userID");
             }
             userCommand = new UserCommand.LoginCommand(arguments);
@@ -282,6 +316,10 @@ public final class CROBS {
         return userCommand.execute(this);
     }
 
+    /**
+     * Checks administrative privileges for a user-management operation.
+     * @return an authorization failure, or {@code null} when the current user is an admin
+     */
     private CommandResult requireAdmin() {
         User actor = session.getCurrentUser();
         if (actor == null) {
@@ -293,6 +331,10 @@ public final class CROBS {
         return null;
     }
 
+    /**
+     * Allocates the next account ID for this session.
+     * @return an ID with the user prefix and a zero-padded number
+     */
     private String generateUserId() {
         String number = Integer.toString(nextUserNumber++);
         StringBuilder id = new StringBuilder(USER_ID_PREFIX);
@@ -303,7 +345,12 @@ public final class CROBS {
         return id.toString();
     }
 
-    private boolean isOneArgument(String arguments) {
-        return arguments.matches("\\S+");
+    /**
+     * Validates commands that accept exactly one whitespace-free argument.
+     * @param arguments the text following the command name
+     * @return whether the argument is absent or contains whitespace
+     */
+    private boolean hasInvalidSingleArgument(String arguments) {
+        return !arguments.matches("\\S+");
     }
 }

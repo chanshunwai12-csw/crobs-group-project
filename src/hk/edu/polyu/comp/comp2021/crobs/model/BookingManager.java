@@ -13,7 +13,6 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.function.Predicate;
 
-/** Manages the bookings stored in a Crobs session. */
 /**
  * Creates, changes, deletes and queries the bookings of one Crobs session.
  *
@@ -27,7 +26,6 @@ public class BookingManager {
     private final CROBS context;
     private final Clock clock;
 
-    /** @param context the shared room, user and booking data */
     /** @param context the shared user, room and booking data */
     public BookingManager(CROBS context) {
         this(context, Clock.systemDefaultZone());

@@ -63,46 +63,44 @@ public class Booking implements Comparable<Booking>, BookingInfo {
         return ownerUserId;
     }
 
-    /** @return the owner ID used by the schedule */
-    @Override
     /** @return the owner id, used by the schedule view */
+    @Override
     public String getUserId() {
         return getOwnerUserId();
     }
 
-    /** @return whether this booking is active while present in the booking map */
-    @Override
     /** @return true while the booking is stored in the session */
+    @Override
     public boolean isActive() {
         return true;
     }
 
-    @Override
     /** @return the id of the booked room */
+    @Override
     public String getRoomId() {
         return roomId;
     }
 
-    @Override
     /** @return the booking date */
+    @Override
     public LocalDate getDate() {
         return date;
     }
 
-    @Override
     /** @return the start time */
+    @Override
     public LocalTime getStartTime() {
         return startTime;
     }
 
-    @Override
     /** @return the end time */
+    @Override
     public LocalTime getEndTime() {
         return endTime;
     }
 
-    @Override
     /** @return the purpose of the booking */
+    @Override
     public String getPurpose() {
         return purpose;
     }
@@ -118,13 +116,13 @@ public class Booking implements Comparable<Booking>, BookingInfo {
                 + " " + startTime + "-" + endTime + " | " + purpose;
     }
 
-    @Override
     /**
      * Orders bookings by date, then start time, then booking id.
      *
      * @param other the booking to compare with
      * @return a negative value, zero, or a positive value
      */
+    @Override
     public int compareTo(Booking other) {
         int byDate = date.compareTo(other.getDate());
         if (byDate != 0) {
