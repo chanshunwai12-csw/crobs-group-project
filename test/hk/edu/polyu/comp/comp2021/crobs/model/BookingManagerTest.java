@@ -51,6 +51,7 @@ class BookingManagerTest {
         Booking changed = bookings.modifyBooking(first.getBookingId(), room, DATE, "09:30", "10:30", "New purpose");
         assertEquals(first.getBookingId(), changed.getBookingId());
         assertEquals(first.getOwnerUserId(), changed.getOwnerUserId());
+        assertTrue(changed.describeWithOwner().contains(" | " + first.getOwnerUserId() + " | "));
         assertEquals("New purpose", changed.getPurpose());
     }
 
