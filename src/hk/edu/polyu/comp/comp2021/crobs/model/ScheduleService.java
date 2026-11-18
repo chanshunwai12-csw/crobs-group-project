@@ -43,6 +43,7 @@ public final class ScheduleService {
         if (!context.hasRoom(roomId)) {
             throw new IllegalArgumentException("Unknown room ID: " + roomId);
         }
+        Objects.requireNonNull(weekStartDate, "weekStartDate");
 
         List<ScheduleEntry> entries = new ArrayList<>();
         for (BookingInfo booking : context.getAllBookings()) {
