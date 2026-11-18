@@ -32,3 +32,9 @@ The search example imposes no feature restriction but still checks capacity and 
 In the GUI, leave **features** blank, or leave **newValue** blank when modifying the
 `features` field. Other required fields must still be filled in. Nonempty feature lists
 remain comma-separated without spaces.
+
+## Integrated submission branch
+
+This branch includes the latest C2 production fixes and the member A edge-case and
+logger failure tests, together with both bonus features. Regression tests cover empty
+feature inputs, schedule selection restoration, permission changes, and cancellation recovery.

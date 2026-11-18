@@ -91,11 +91,12 @@ public final class CrobsController {
      */
     public void run(BufferedReader input) throws IOException {
         try (CommandLogger logger = new CommandLogger(context.getHtmlLogPath(), context.getTxtLogPath())) {
-            String line;
-            while ((line = input.readLine()) != null) {
+            String line = input.readLine();
+            while (line != null) {
                 if (!executeLine(line, logger)) {
                     return;
                 }
+                line = input.readLine();
             }
         }
     }

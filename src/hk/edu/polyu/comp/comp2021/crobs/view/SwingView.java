@@ -222,26 +222,46 @@ public final class SwingView {
         if (selected == null) {
             return;
         }
+        List<String> values = new ArrayList<>();
+        for (JTextField input : inputs) {
+            values.add(input.getText());
+        }
+        try {
+            run(formatCommand(selected, values));
+        } catch (IllegalArgumentException exception) {
+            JOptionPane.showMessageDialog(frame, exception.getMessage());
+        }
+    }
+
+    /**
+     * Formats form values using the shared CLI convention for empty feature lists.
+     * @param selected the command syntax from the form selector
+     * @param values input values in parameter order
+     * @return a complete command suitable for execution and logging
+     * @throws IllegalArgumentException if an input is missing or invalid
+     */
+    static String formatCommand(String selected, List<String> values) {
         String[] syntax = selected.split(" ");
+        if (values.size() != syntax.length - 1) {
+            throw new IllegalArgumentException("Command fields do not match the selected command.");
+        }
         StringBuilder line = new StringBuilder(syntax[0]);
-        for (int index = 0; index < inputs.size(); index++) {
-            String value = inputs.get(index).getText().trim();
+        for (int index = 0; index < values.size(); index++) {
+            String value = values.get(index).trim();
             String parameter = syntax[index + 1];
-            boolean features = "features".equals(parameter)
-                    || ("modifyRoom".equals(syntax[0]) && "newValue".equals(parameter)
-                    && "features".equals(inputs.get(1).getText().trim()));
-            if (features && value.isEmpty()) {
+            boolean features = "features".equals(parameter) || ("modifyRoom".equals(syntax[0])
+                    && "newValue".equals(parameter) && index > 0
+                    && "features".equals(values.get(index - 1).trim()));
+            if (value.isEmpty() && features) {
                 value = "\"\"";
             }
             if (value.isEmpty() || (!"name".equals(parameter) && !"purpose".equals(parameter)
                     && value.matches(".*\\s.*"))) {
-                JOptionPane.showMessageDialog(frame, "Enter a valid " + parameter + ".");
-                inputs.get(index).requestFocusInWindow();
-                return;
+                throw new IllegalArgumentException("Enter a valid " + parameter + ".");
             }
             line.append(' ').append(value);
         }
-        run(line.toString());
+        return line.toString();
     }
 
     /**
