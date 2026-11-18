@@ -13,7 +13,12 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.function.Predicate;
 
-/** Manages the bookings stored in a Crobs session. */
+/**
+ * Creates, changes, deletes and queries the bookings of one Crobs session.
+ *
+ * <p>All data lives in the shared {@link CROBS} instance. Business failures are
+ * reported with standard JDK exceptions so the controller can print one line.</p>
+ */
 public class BookingManager {
 
     /** Response shown when the current user has no reservations. */
