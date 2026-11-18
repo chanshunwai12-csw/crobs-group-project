@@ -1,6 +1,7 @@
 package hk.edu.polyu.comp.comp2021.crobs.controller;
 
 import hk.edu.polyu.comp.comp2021.crobs.model.CROBS;
+import java.util.function.Consumer;
 import hk.edu.polyu.comp.comp2021.crobs.model.User;
 
 import java.util.ArrayDeque;
@@ -28,12 +29,12 @@ final class CommandHistory {
     }
 
     /**
-     * Records a display command whose redo repeats the display.
+     * Records a schedule selection with reversible display actions.
      * @param actorId the user who requested the schedule
      * @param command the original command line
-     * @param replay operation to repeat on redo
+     * @param replay restores the next selection for true and the previous selection for false
      */
-    void recordSchedule(String actorId, String command, Runnable replay) {
+    void recordSchedule(String actorId, String command, Consumer<Boolean> replay) {
         record(new Change(actorId, command, null, null, replay));
     }
 
@@ -106,8 +107,8 @@ final class CommandHistory {
         private final CROBS.State before;
         /** State after a model change, absent for schedule displays. */
         private final CROBS.State after;
-        /** Repeatable display, absent for model changes. */
-        private final Runnable replay;
+        /** Reversible display callback, absent for model changes. */
+        private final Consumer<Boolean> replay;
 
         /**
          * Captures either a model change or a schedule display.
@@ -115,9 +116,9 @@ final class CommandHistory {
          * @param command the submitted command line
          * @param before state before a change, or null for a display
          * @param after state after a change, or null for a display
-         * @param replay display callback, or null for a model change
+         * @param replay reversible display callback, or null for a model change
          */
-        private Change(String actorId, String command, CROBS.State before, CROBS.State after, Runnable replay) {
+        private Change(String actorId, String command, CROBS.State before, CROBS.State after, Consumer<Boolean> replay) {
             this.actorId = actorId;
             this.command = command;
             this.before = before;
@@ -140,12 +141,14 @@ final class CommandHistory {
         }
 
         /**
-         * Restores a model change; reversing a display leaves data unchanged.
+         * Restores model data or the previous schedule selection.
          * @param crobs the active model
          * @return confirmation identifying the reversed command
          */
         private String undo(CROBS crobs) {
-            if (before != null) {
+            if (replay != null) {
+                replay.accept(false);
+            } else if (before != null) {
                 crobs.restore(before);
             }
             return "Undid: " + command;
@@ -158,7 +161,7 @@ final class CommandHistory {
          */
         private String redo(CROBS crobs) {
             if (replay != null) {
-                replay.run();
+                replay.accept(true);
             } else {
                 crobs.restore(after);
             }

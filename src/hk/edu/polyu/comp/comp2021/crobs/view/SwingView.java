@@ -75,6 +75,8 @@ public final class SwingView {
      * Scrollable transcript of commands, results and errors.
      */
     private final JTextArea output = new JTextArea(OUTPUT_ROWS, OUTPUT_COLUMNS);
+    /** Replaceable schedule display, kept separate from the command transcript. */
+    private final JTextArea scheduleOutput = new JTextArea(OUTPUT_ROWS / 2, OUTPUT_COLUMNS);
     /**
      * Current login ID and role, or a signed-out message.
      */
@@ -105,7 +107,7 @@ public final class SwingView {
     private SwingView(CrobsContext context, CROBS crobs) throws IOException {
         this.crobs = crobs;
         logger = new CommandLogger(context.getHtmlLogPath(), context.getTxtLogPath());
-        CLIView resultView = new CLIView(new PrintWriter(response, true));
+        CLIView resultView = new CLIView(new PrintWriter(response, true), scheduleOutput::setText);
         ProjectCommands projectCommands = new ProjectCommands(crobs, resultView);
         controller = new CrobsController(context, resultView, projectCommands);
         buildWindow();
@@ -165,6 +167,11 @@ public final class SwingView {
         output.getAccessibleContext().setAccessibleName("Command output");
         content.add(form, BorderLayout.NORTH);
         content.add(new JScrollPane(output), BorderLayout.CENTER);
+        scheduleOutput.setEditable(false);
+        scheduleOutput.getAccessibleContext().setAccessibleName("Current schedule");
+        JScrollPane schedulePane = new JScrollPane(scheduleOutput);
+        schedulePane.setBorder(BorderFactory.createTitledBorder("Current schedule"));
+        content.add(schedulePane, BorderLayout.SOUTH);
         frame.setContentPane(content);
         commands.addActionListener(event -> updateFields());
         updateFields();
@@ -196,6 +203,9 @@ public final class SwingView {
             } else if (parameters[index].endsWith("Time")) {
                 input.setToolTipText("HH:mm");
             }
+            if ("features".equals(parameters[index]) || "newValue".equals(parameters[index])) {
+                input.setToolTipText("For features, leave blank for an empty list.");
+            }
             fields.add(label);
             fields.add(input);
             inputs.add(input);
@@ -217,6 +227,12 @@ public final class SwingView {
         for (int index = 0; index < inputs.size(); index++) {
             String value = inputs.get(index).getText().trim();
             String parameter = syntax[index + 1];
+            boolean features = "features".equals(parameter)
+                    || ("modifyRoom".equals(syntax[0]) && "newValue".equals(parameter)
+                    && "features".equals(inputs.get(1).getText().trim()));
+            if (features && value.isEmpty()) {
+                value = "\"\"";
+            }
             if (value.isEmpty() || (!"name".equals(parameter) && !"purpose".equals(parameter)
                     && value.matches(".*\\s.*"))) {
                 JOptionPane.showMessageDialog(frame, "Enter a valid " + parameter + ".");

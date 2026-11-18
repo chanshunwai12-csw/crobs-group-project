@@ -3,6 +3,7 @@ package hk.edu.polyu.comp.comp2021.crobs.controller;
 import hk.edu.polyu.comp.comp2021.crobs.model.Booking;
 import hk.edu.polyu.comp.comp2021.crobs.model.BookingManager;
 import hk.edu.polyu.comp.comp2021.crobs.model.CROBS;
+import java.util.function.Consumer;
 import hk.edu.polyu.comp.comp2021.crobs.model.CommandResult;
 import hk.edu.polyu.comp.comp2021.crobs.model.Room;
 import hk.edu.polyu.comp.comp2021.crobs.model.TimeUtil;
@@ -85,6 +86,15 @@ public final class ProjectCommands {
     }
 
     /**
+     * Decodes the documented empty feature-list token.
+     * @param value the feature argument
+     * @return an empty string for two quotation marks, otherwise the original value
+     */
+    private static String featureValue(String value) {
+        return "\"\"".equals(value) ? "" : value;
+    }
+
+    /**
      * Identifies operations that change model data.
      * @param command the command name
      * @return whether it needs before and after snapshots
@@ -107,11 +117,11 @@ public final class ProjectCommands {
     }
 
     /**
-     * Records a successful schedule display so redo can display it again.
+     * Records a schedule selection for undo and redo.
      * @param line the original schedule command
-     * @param replay the display operation to repeat
+     * @param replay restores the next selection for true and the previous selection for false
      */
-    void recordSchedule(String line, Runnable replay) {
+    void recordSchedule(String line, Consumer<Boolean> replay) {
         history.recordSchedule(crobs.getCurrentUser().getId(), line, replay);
     }
 
@@ -129,13 +139,13 @@ public final class ProjectCommands {
             case "addRoom":
                 requireArgs(args, ROOM_CHANGE_SIZE, "addRoom roomType capacity features");
                 requireAdmin();
-                Room room = rooms.addRoom(args[1], Integer.parseInt(args[2]), args[3]);
+                Room room = rooms.addRoom(args[1], Integer.parseInt(args[2]), featureValue(args[3]));
                 view.showMessage("Room created: " + room.getRoomId());
                 break;
             case "modifyRoom":
                 requireArgs(args, ROOM_CHANGE_SIZE, "modifyRoom roomId field newValue");
                 requireAdmin();
-                rooms.modifyRoom(args[1], args[2], args[3]);
+                rooms.modifyRoom(args[1], args[2], "features".equals(args[2]) ? featureValue(args[3]) : args[3]);
                 view.showMessage("Room updated: " + args[1]);
                 break;
             case "deleteRoom":
@@ -198,7 +208,7 @@ public final class ProjectCommands {
         LocalTime end = TimeUtil.parseTime(args[3]);
         TimeUtil.validateTimeRange(start, end);
         int minCapacity = Integer.parseInt(args[4]);
-        String features = args[5];
+        String features = featureValue(args[5]);
         List<Room> available = rooms.searchRooms(minCapacity, features).stream()
                 .filter(room -> !crobs.getConflictChecker().isTimeConflict(room.getRoomId(), date, start, end))
                 .collect(Collectors.toList());

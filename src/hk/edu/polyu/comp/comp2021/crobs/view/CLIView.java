@@ -3,6 +3,8 @@ package hk.edu.polyu.comp.comp2021.crobs.view;
 import hk.edu.polyu.comp.comp2021.crobs.model.ScheduleEntry;
 
 import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.function.Consumer;
 import java.util.List;
 import java.util.Objects;
 
@@ -11,6 +13,11 @@ public final class CLIView {
     /** Writer used to display command responses. */
     private final PrintWriter output;
 
+    /** Current rendered schedule, separate from the immutable command transcript. */
+    private String scheduleText = "";
+    /** Receives the current schedule for an optional graphical panel. */
+    private final Consumer<String> scheduleDisplay;
+
     /**
      * Creates a view that writes command responses to the supplied writer.
      *
@@ -18,7 +25,17 @@ public final class CLIView {
      * @throws NullPointerException if the writer is {@code null}
      */
     public CLIView(PrintWriter output) {
+        this(output, text -> { });
+    }
+
+    /**
+     * Connects output and a replaceable schedule panel.
+     * @param output command transcript writer
+     * @param scheduleDisplay consumer of the current schedule text
+     */
+    public CLIView(PrintWriter output, Consumer<String> scheduleDisplay) {
         this.output = Objects.requireNonNull(output);
+        this.scheduleDisplay = Objects.requireNonNull(scheduleDisplay);
     }
 
     /**
@@ -29,19 +46,44 @@ public final class CLIView {
      * @throws NullPointerException if the entries list or one of its entries is {@code null}
      */
     public void showSchedule(String roomId, List<ScheduleEntry> entries) {
-        output.println("Schedule for room " + roomId);
+        updateSchedule(roomId, entries);
+        announceSchedule();
+    }
+
+    /**
+     * Refreshes the replaceable schedule without appending to the transcript.
+     * @param roomId selected room
+     * @param entries bookings filtered for the currently logged-in user
+     */
+    public void updateSchedule(String roomId, List<ScheduleEntry> entries) {
+        StringWriter buffer = new StringWriter();
+        PrintWriter rendered = new PrintWriter(buffer);
+        rendered.println("Schedule for room " + roomId);
         if (entries.isEmpty()) {
-            output.println("No active bookings in this week.");
+            rendered.println("No active bookings in this week.");
         }
         for (ScheduleEntry entry : entries) {
-            output.print(entry.getDate() + " " + entry.getStartTime() + "-" + entry.getEndTime()
+            rendered.print(entry.getDate() + " " + entry.getStartTime() + "-" + entry.getEndTime()
                     + " | booking=" + entry.getBookingId() + " | purpose=" + entry.getPurpose());
             if (entry.getVisibleUserId() != null) {
-                output.print(" | user=" + entry.getVisibleUserId());
+                rendered.print(" | user=" + entry.getVisibleUserId());
             }
-            output.println();
+            rendered.println();
         }
-        output.flush();
+        rendered.flush();
+        scheduleText = buffer.toString();
+        scheduleDisplay.accept(scheduleText);
+    }
+
+    /** Clears the current schedule while preserving the command transcript. */
+    public void clearSchedule() {
+        scheduleText = "";
+        scheduleDisplay.accept(scheduleText);
+    }
+
+    /** Announces the restored schedule, or that no schedule is selected. */
+    public void announceSchedule() {
+        showMessage(scheduleText.isEmpty() ? "No schedule selected." : scheduleText.trim());
     }
 
     /**

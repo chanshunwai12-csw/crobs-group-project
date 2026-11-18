@@ -28,7 +28,10 @@ public final class CrobsController {
     /**
      * Callback recording successful schedule displays for undo and redo.
      */
-    private final BiConsumer<String, Runnable> scheduleHistory;
+    private final BiConsumer<String, Consumer<Boolean>> scheduleHistory;
+
+    /** Selected schedule command, absent before the first display. */
+    private String selectedSchedule = "";
 
     /**
      * Creates a command loop that handles schedules, quit and unknown commands.
@@ -72,7 +75,7 @@ public final class CrobsController {
      * @throws NullPointerException if any dependency is null
      */
     private CrobsController(CrobsContext context, CLIView view, Consumer<String> otherCommands,
-                            BiConsumer<String, Runnable> scheduleHistory) {
+                            BiConsumer<String, Consumer<Boolean>> scheduleHistory) {
         this.context = Objects.requireNonNull(context);
         schedules = new ScheduleService(context);
         this.view = Objects.requireNonNull(view);
@@ -123,8 +126,10 @@ public final class CrobsController {
         try {
             switch (command[0]) {
                 case "schedule":
+                    String previous = selectedSchedule;
                     showSchedule(command);
-                    scheduleHistory.accept(line, () -> showSchedule(command));
+                    selectedSchedule = line;
+                    scheduleHistory.accept(line, forward -> restoreSchedule(forward ? line : previous));
                     break;
                 case "quit":
                     if (command.length != 1) {
@@ -134,12 +139,37 @@ public final class CrobsController {
                     return false;
                 default:
                     otherCommands.accept(line);
+                    refreshSchedule();
             }
         } catch (IllegalArgumentException | IllegalStateException | SecurityException
                  | NoSuchElementException exception) {
             view.showError(exception.getMessage());
         }
         return true;
+    }
+
+    /**
+     * Restores a selected schedule and announces its current visible contents.
+     * @param selection the prior or next schedule command
+     */
+    private void restoreSchedule(String selection) {
+        selectedSchedule = selection;
+        refreshSchedule();
+        view.announceSchedule();
+    }
+
+    /** Refreshes the current schedule after login, role or reservation changes. */
+    private void refreshSchedule() {
+        if (selectedSchedule.isEmpty()) {
+            view.clearSchedule();
+            return;
+        }
+        String[] selection = CommandParser.parse(selectedSchedule);
+        try {
+            view.updateSchedule(selection[1], schedules.schedule(selection[1], TimeUtil.parseDate(selection[2])));
+        } catch (IllegalArgumentException | IllegalStateException exception) {
+            view.clearSchedule();
+        }
     }
 
     /**
