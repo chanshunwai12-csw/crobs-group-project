@@ -84,13 +84,18 @@ public final class CommandLogger implements AutoCloseable {
      * @throws IOException if finishing or closing a log fails
      */
     @Override
-    @SuppressWarnings("try")
     public synchronized void close() throws IOException {
         if (!htmlLog.isOpen()) {
             return;
         }
-        try (FileChannel html = htmlLog; FileChannel txt = txtLog) {
-            write(html, HTML_FOOTER);
+        try (FileChannel html = htmlLog) {
+            try {
+                write(html, HTML_FOOTER);
+            } catch (IOException | RuntimeException | Error failure) {
+                closeAfterFailure(txtLog, failure);
+                throw failure;
+            }
+            txtLog.close();
         }
     }
 
@@ -101,7 +106,9 @@ public final class CommandLogger implements AutoCloseable {
     private static void write(FileChannel file, String text) throws IOException {
         ByteBuffer bytes = StandardCharsets.UTF_8.encode(text);
         while (bytes.hasRemaining()) {
-            file.write(bytes);
+            if (file.write(bytes) == 0) {
+                throw new IOException("Could not make progress writing the command log.");
+            }
         }
     }
 

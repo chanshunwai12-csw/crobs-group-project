@@ -2,7 +2,6 @@ package hk.edu.polyu.comp.comp2021.crobs.model;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.Optional;
 
 /** Booking details that may be printed for the current viewer. */
 public final class ScheduleEntry {
@@ -11,7 +10,8 @@ public final class ScheduleEntry {
     private final LocalTime startTime;
     private final LocalTime endTime;
     private final String purpose;
-    private final Optional<String> visibleUserId;
+    private final String userId;
+    private final boolean showUserId;
 
     /**
      * Copies a booking's display fields and applies the owner's visibility rule.
@@ -26,7 +26,8 @@ public final class ScheduleEntry {
         startTime = booking.getStartTime();
         endTime = booking.getEndTime();
         purpose = booking.getPurpose();
-        visibleUserId = showUserId ? Optional.ofNullable(booking.getUserId()) : Optional.empty();
+        userId = booking.getUserId();
+        this.showUserId = showUserId;
     }
 
     /**
@@ -74,6 +75,6 @@ public final class ScheduleEntry {
      * @return the owner ID if visible, or {@code null}
      */
     public String getVisibleUserId() {
-        return visibleUserId.orElse(null);
+        return showUserId ? userId : null;
     }
 }
