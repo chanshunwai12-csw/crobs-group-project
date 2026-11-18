@@ -65,4 +65,14 @@ class RoomManagerTest {
         assertThrows(IllegalArgumentException.class, () -> rooms.addRoom("meetingRoom", 10, null));
         assertEquals("R001", rooms.addRoom("meetingRoom", 10, "").getRoomId());
     }
+
+    @Test
+    void directFeatureUpdatesRejectInvalidTokensWithoutChangingTheRoom() {
+        Room room = rooms.addRoom("seminarRoom", 30, "projector");
+        for (String invalid : Arrays.asList(null, "", "white board", "a,b", "a\tb", "a\u00a0b")) {
+            assertThrows(IllegalArgumentException.class,
+                    () -> room.setFeatures(Collections.singleton(invalid)));
+            assertEquals(Collections.singleton("projector"), room.getFeatures());
+        }
+    }
 }

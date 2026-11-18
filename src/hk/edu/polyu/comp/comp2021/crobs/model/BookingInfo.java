@@ -5,27 +5,51 @@ import java.time.LocalTime;
 
 /** Booking fields used by room availability and the weekly schedule. */
 public interface BookingInfo {
-    /** @return the unique booking ID */
+    /**
+     * Identifies this booking within the session.
+     * @return the unique booking ID
+     */
     String getBookingId();
 
-    /** @return the booked room ID */
+    /**
+     * Identifies the room reserved by this booking.
+     * @return the booked room ID
+     */
     String getRoomId();
 
-    /** @return the owner user ID */
+    /**
+     * Identifies the user who owns this booking.
+     * @return the owner user ID
+     */
     String getUserId();
 
-    /** @return the booking date */
+    /**
+     * Supplies the calendar date used for conflict and schedule queries.
+     * @return the booking date
+     */
     LocalDate getDate();
 
-    /** @return the start time on the booking date */
+    /**
+     * Supplies the beginning of the reserved time slot.
+     * @return the start time on the booking date
+     */
     LocalTime getStartTime();
 
-    /** @return the end time on the booking date */
+    /**
+     * Supplies the exclusive end of the reserved time slot.
+     * @return the end time on the booking date
+     */
     LocalTime getEndTime();
 
-    /** @return the recorded purpose */
+    /**
+     * Supplies the purpose displayed in the weekly schedule.
+     * @return the recorded purpose
+     */
     String getPurpose();
 
-    /** @return whether the booking is active */
+    /**
+     * Indicates whether availability and schedule queries should include this booking.
+     * @return whether the booking is active
+     */
     boolean isActive();
 }
