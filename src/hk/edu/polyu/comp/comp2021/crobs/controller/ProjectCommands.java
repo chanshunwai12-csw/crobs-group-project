@@ -27,6 +27,8 @@ public final class ProjectCommands {
     private final CLIView view;
 
     /**
+     * Connects the shared command loop to the user, room and booking models.
+     *
      * @param crobs shared application model
      * @param view command output
      */
@@ -38,7 +40,14 @@ public final class ProjectCommands {
     }
 
     /**
+     * Executes a user, room or booking command and displays its result.
+     * Validation failures are reported by the surrounding command loop.
+     *
      * @param line the original line already recorded by the command loop
+     * @throws IllegalArgumentException if the arguments or requested values are invalid
+     * @throws IllegalStateException if the model cannot perform the operation
+     * @throws SecurityException if the user lacks the required access privileges
+     * @throws java.util.NoSuchElementException if a required room or booking is missing
      */
     public void execute(String line) {
         String[] args = CommandParser.parse(line);

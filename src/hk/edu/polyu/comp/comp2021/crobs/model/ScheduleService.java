@@ -13,18 +13,25 @@ public final class ScheduleService {
     private final CrobsContext context;
 
     /**
+     * Connects the weekly schedule to the session's live rooms, bookings and user.
+     *
      * @param context the shared Crobs session
+     * @throws NullPointerException if the context is {@code null}
      */
     public ScheduleService(CrobsContext context) {
         this.context = Objects.requireNonNull(context);
     }
 
     /**
+     * Lists active bookings from the supplied start date through the next six days.
+     * Admin users see all owner IDs. Regular users see the IDs of their own bookings.
+     *
      * @param roomId room to display
      * @param weekStartDate first date to include
      * @return visible schedule entries sorted by date and start time
      * @throws IllegalStateException if no user is logged in
      * @throws IllegalArgumentException if the room ID does not exist
+     * @throws NullPointerException if the start date is {@code null}
      */
     public List<ScheduleEntry> schedule(String roomId, LocalDate weekStartDate) {
         SessionUser viewer = context.getCurrentLoginUser();

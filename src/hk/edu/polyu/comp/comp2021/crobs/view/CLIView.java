@@ -11,15 +11,21 @@ public final class CLIView {
     private final PrintWriter output;
 
     /**
+     * Creates a view that writes command responses to the supplied writer.
+     *
      * @param output the command-output writer
+     * @throws NullPointerException if the writer is {@code null}
      */
     public CLIView(PrintWriter output) {
         this.output = Objects.requireNonNull(output);
     }
 
     /**
+     * Prints a weekly schedule using the owner IDs allowed by the model.
+     *
      * @param roomId room shown in the schedule
      * @param entries booking rows with any restricted user IDs already removed
+     * @throws NullPointerException if the entries list or one of its entries is {@code null}
      */
     public void showSchedule(String roomId, List<ScheduleEntry> entries) {
         output.println("Schedule for room " + roomId);
@@ -38,6 +44,8 @@ public final class CLIView {
     }
 
     /**
+     * Prints a validation or access error and flushes the output.
+     *
      * @param message the user-facing error message
      */
     public void showError(String message) {
@@ -45,6 +53,8 @@ public final class CLIView {
     }
 
     /**
+     * Prints a command result and flushes the output.
+     *
      * @param message the command result or session information
      */
     public void showMessage(String message) {

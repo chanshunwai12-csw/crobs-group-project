@@ -20,6 +20,9 @@ public final class TimeUtil {
     private TimeUtil() { }
 
     /**
+     * Parses a date using the four-digit year, month and day format.
+     * Rejects invalid calendar dates instead of adjusting them.
+     *
      * @param input date in yyyy-MM-dd form
      * @return the parsed date
      * @throws IllegalArgumentException if the input is not a valid date in the required form
@@ -36,6 +39,8 @@ public final class TimeUtil {
     }
 
     /**
+     * Parses a time in the 24-hour, hour-and-minute format.
+     *
      * @param input time in 24-hour HH:mm form
      * @return the parsed time
      * @throws IllegalArgumentException if the input is not a valid time in the required form
@@ -52,6 +57,8 @@ public final class TimeUtil {
     }
 
     /**
+     * Requires a same-day time slot with a start strictly before its end.
+     *
      * @param start the start time
      * @param end the end time
      * @throws IllegalArgumentException if the times do not form an increasing same-day slot

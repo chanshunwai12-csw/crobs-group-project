@@ -33,9 +33,14 @@ public final class CommandLogger implements AutoCloseable {
         }
 
         FileChannel first = openLog(htmlPath);
-        FileChannel second = null;
+        FileChannel second;
         try {
             second = openLog(txtPath);
+        } catch (IOException | RuntimeException failure) {
+            closeAfterFailure(first, failure);
+            throw failure;
+        }
+        try {
             if (Files.isSameFile(htmlPath, txtPath)) {
                 throw new IOException(SAME_LOG_FILE);
             }
@@ -110,12 +115,10 @@ public final class CommandLogger implements AutoCloseable {
     }
 
     private static void closeAfterFailure(FileChannel file, Throwable failure) {
-        if (file != null) {
-            try {
-                file.close();
-            } catch (IOException closeFailure) {
-                failure.addSuppressed(closeFailure);
-            }
+        try {
+            file.close();
+        } catch (IOException closeFailure) {
+            failure.addSuppressed(closeFailure);
         }
     }
 

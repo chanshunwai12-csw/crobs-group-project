@@ -21,17 +21,23 @@ public final class CrobsController {
     private final Consumer<String> otherCommands;
 
     /**
+     * Creates a command loop that handles schedules, quit and unknown commands.
+     *
      * @param context the shared Crobs session
      * @param view output for command results and errors
+     * @throws NullPointerException if the context or view is {@code null}
      */
     public CrobsController(CrobsContext context, CLIView view) {
         this(context, view, line -> view.showError("Unknown command: " + CommandParser.parse(line)[0]));
     }
 
     /**
+     * Creates a command loop connected to the other modules' command handler.
+     *
      * @param context the shared Crobs session
      * @param view output for command results and errors
      * @param otherCommands handler for user, room and booking commands
+     * @throws NullPointerException if any argument is {@code null}
      */
     public CrobsController(CrobsContext context, CLIView view, Consumer<String> otherCommands) {
         this.context = Objects.requireNonNull(context);
@@ -48,8 +54,8 @@ public final class CrobsController {
      */
     public void run(BufferedReader input) throws IOException {
         try (CommandLogger logger = new CommandLogger(context.getHtmlLogPath(), context.getTxtLogPath())) {
-            String line;
-            while ((line = input.readLine()) != null) {
+            String line = input.readLine();
+            while (line != null) {
                 String[] command = CommandParser.parse(line);
                 if (command.length > 0) {
                     logger.log(line);
@@ -57,6 +63,7 @@ public final class CrobsController {
                         return;
                     }
                 }
+                line = input.readLine();
             }
         }
     }

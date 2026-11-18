@@ -12,6 +12,8 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
 
 /** Entry point for the Crobs command-line application. */
 public final class Application {
@@ -23,6 +25,9 @@ public final class Application {
     private Application() { }
 
     /**
+     * Starts a command-line session and writes commands to the two log files.
+     * Reports invalid launch options or log failures on standard error.
+     *
      * @param args command-line options specifying the HTML and TXT log paths
      */
     public static void main(String[] args) {
@@ -54,23 +59,19 @@ public final class Application {
             throw new IllegalArgumentException("Specify both log paths.");
         }
 
-        Path htmlPath = null;
-        Path txtPath = null;
+        Map<String, Path> logPaths = new HashMap<>();
         for (int index = 0; index < args.length; index += ARGUMENTS_PER_OPTION) {
             String option = args[index];
             String path = args[index + 1];
             if (path.trim().isEmpty()) {
                 throw new IllegalArgumentException("Missing file path for " + option);
             }
-            if ("-html".equals(option) && htmlPath == null) {
-                htmlPath = Paths.get(path);
-            } else if ("-txt".equals(option) && txtPath == null) {
-                txtPath = Paths.get(path);
-            } else {
+            if (!("-html".equals(option) || "-txt".equals(option)) || logPaths.containsKey(option)) {
                 throw new IllegalArgumentException("Unknown or duplicate option: " + option);
             }
+            logPaths.put(option, Paths.get(path));
         }
-        return createContext(htmlPath, txtPath, crobs);
+        return createContext(logPaths.get("-html"), logPaths.get("-txt"), crobs);
     }
 
     private static CrobsContext createContext(Path htmlPath, Path txtPath, CROBS crobs) {
