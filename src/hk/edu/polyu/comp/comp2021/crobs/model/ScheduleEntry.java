@@ -5,12 +5,19 @@ import java.time.LocalTime;
 
 /** Booking details that may be printed for the current viewer. */
 public final class ScheduleEntry {
+    /** Identifier of the represented reservation. */
     private final String bookingId;
+    /** Calendar date of the reservation. */
     private final LocalDate date;
+    /** Inclusive beginning of the reservation time slot. */
     private final LocalTime startTime;
+    /** Exclusive end of the reservation time slot. */
     private final LocalTime endTime;
+    /** Purpose displayed with the reservation. */
     private final String purpose;
+    /** Account ID associated with this command or display row. */
     private final String userId;
+    /** Whether the display row may expose its owner ID. */
     private final boolean showUserId;
 
     /**

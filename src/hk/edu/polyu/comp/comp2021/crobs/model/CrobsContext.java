@@ -9,10 +9,15 @@ import java.util.function.Supplier;
 
 /** Shared session data and paths consumed by the Crobs modules. */
 public final class CrobsContext {
+    /** Destination configured for the HTML command log. */
     private final Path htmlLogPath;
+    /** Destination configured for the plain-text command log. */
     private final Path txtLogPath;
+    /** Lookup against the live room collection. */
     private final Predicate<String> roomExists;
+    /** Read-only live view of the session reservations. */
     private final Collection<? extends BookingInfo> allBookings;
+    /** Lookup of the current login state. */
     private final Supplier<? extends SessionUser> currentLoginUser;
 
     /**

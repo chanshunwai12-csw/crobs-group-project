@@ -2,6 +2,7 @@ package hk.edu.polyu.comp.comp2021.crobs.controller;
 
 /** Splits a console line into a command name followed by its arguments. */
 final class CommandParser {
+    /** Prevents instantiation of the command tokenizer. */
     private CommandParser() { }
 
     /**

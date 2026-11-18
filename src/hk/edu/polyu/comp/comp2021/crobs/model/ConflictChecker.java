@@ -7,6 +7,7 @@ import java.util.Objects;
 
 /** Checks room availability against the live booking collection. */
 public final class ConflictChecker {
+    /** Live reservations used by operations and availability queries. */
     private final Collection<? extends BookingInfo> bookings;
 
     /**

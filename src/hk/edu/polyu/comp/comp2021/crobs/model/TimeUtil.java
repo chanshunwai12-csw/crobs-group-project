@@ -9,14 +9,20 @@ import java.util.Locale;
 
 /** Shared parsing and validation for booking, search, and schedule commands. */
 public final class TimeUtil {
+    /** Strict calendar-date pattern with a four-digit proleptic year. */
     private static final String DATE_PATTERN = "uuuu-MM-dd";
+    /** Strict 24-hour hour-and-minute pattern. */
     private static final String TIME_PATTERN = "HH:mm";
+    /** Validation response for invalid or incorrectly formatted dates. */
     private static final String INVALID_DATE = "Invalid date. Use yyyy-MM-dd.";
+    /** Locale-independent formatter that rejects invalid calendar dates. */
     private static final DateTimeFormatter DATE_FORMATTER =
             DateTimeFormatter.ofPattern(DATE_PATTERN, Locale.ROOT).withResolverStyle(ResolverStyle.STRICT);
+    /** Locale-independent formatter for valid 24-hour times. */
     private static final DateTimeFormatter TIME_FORMATTER =
             DateTimeFormatter.ofPattern(TIME_PATTERN, Locale.ROOT).withResolverStyle(ResolverStyle.STRICT);
 
+    /** Prevents instantiation of the shared date and time utilities. */
     private TimeUtil() { }
 
     /**

@@ -17,11 +17,15 @@ import java.util.Map;
 
 /** Entry point for the Crobs command-line application. */
 public final class Application {
+    /** Number of tokens in a launch option and its path. */
     private static final int ARGUMENTS_PER_OPTION = 2;
+    /** Number of log destinations configured for a session. */
     private static final int LOG_OPTION_COUNT = 2;
+    /** Launch syntax shown when an option is invalid. */
     private static final String USAGE = "Usage: java hk.edu.polyu.comp.comp2021.crobs.Application"
             + " -html <log.html> -txt <log.txt>";
 
+    /** Prevents instantiation of the application entry point. */
     private Application() { }
 
     /**
@@ -51,6 +55,13 @@ public final class Application {
         }
     }
 
+    /**
+     * Validates launch options and connects the requested log destinations.
+     * @param args zero arguments or the two named log options and paths
+     * @param crobs the shared application model
+     * @return the configured session context
+     * @throws IllegalArgumentException if an option is unknown, duplicated, missing or invalid
+     */
     private static CrobsContext parseContext(String[] args, CROBS crobs) {
         if (args.length == 0) {
             return createContext(Paths.get("log.html"), Paths.get("log.txt"), crobs);
@@ -74,6 +85,13 @@ public final class Application {
         return createContext(logPaths.get("-html"), logPaths.get("-txt"), crobs);
     }
 
+    /**
+     * Connects query services to the live application state.
+     * @param htmlPath the HTML log destination
+     * @param txtPath the text log destination
+     * @param crobs the shared application model
+     * @return a context observing the current rooms, reservations and login
+     */
     private static CrobsContext createContext(Path htmlPath, Path txtPath, CROBS crobs) {
         return new CrobsContext(htmlPath, txtPath, roomId -> crobs.getRoomManager().getRoom(roomId) != null,
                 crobs.getBookings().values(), crobs::getCurrentUser);

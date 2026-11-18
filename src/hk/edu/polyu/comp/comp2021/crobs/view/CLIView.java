@@ -8,6 +8,7 @@ import java.util.Objects;
 
 /** Prints command responses to the console. */
 public final class CLIView {
+    /** Writer used to display command responses. */
     private final PrintWriter output;
 
     /**

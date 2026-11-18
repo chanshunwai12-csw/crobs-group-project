@@ -9,7 +9,9 @@ import java.util.Objects;
 
 /** Selects weekly bookings and applies the schedule's owner visibility rule. */
 public final class ScheduleService {
+    /** Number of consecutive dates included in a weekly schedule. */
     private static final int DAYS_PER_WEEK = 7;
+    /** Shared session data used by this component. */
     private final CrobsContext context;
 
     /**

@@ -14,10 +14,15 @@ import java.util.function.Consumer;
 
 /** Runs the shared command loop and dispatches the C2 commands. */
 public final class CrobsController {
+    /** Token count for a weekly schedule query. */
     private static final int SCHEDULE_TOKEN_COUNT = 3;
+    /** Shared session data used by this component. */
     private final CrobsContext context;
+    /** Weekly schedule queries for the shared session. */
     private final ScheduleService schedules;
+    /** Output view for command results and errors. */
     private final CLIView view;
+    /** Handler for commands provided by the other modules. */
     private final Consumer<String> otherCommands;
 
     /**
@@ -68,6 +73,12 @@ public final class CrobsController {
         }
     }
 
+    /**
+     * Routes one logged command and reports expected validation failures.
+     * @param command the tokenized nonblank command
+     * @param line the original input for handlers that preserve free text
+     * @return whether the command loop should continue
+     */
     private boolean dispatch(String[] command, String line) {
         try {
             switch (command[0]) {
@@ -90,6 +101,12 @@ public final class CrobsController {
         return true;
     }
 
+    /**
+     * Validates and displays a weekly room schedule.
+     * @param command the schedule command and its room and date arguments
+     * @throws IllegalArgumentException if the syntax, room or date is invalid
+     * @throws IllegalStateException if nobody is logged in
+     */
     private void showSchedule(String[] command) {
         if (command.length != SCHEDULE_TOKEN_COUNT) {
             throw new IllegalArgumentException("Usage: schedule roomId weekStartDate");
