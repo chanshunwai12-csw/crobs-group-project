@@ -16,17 +16,27 @@ import java.util.stream.Collectors;
 
 /** Routes the project's existing user, room, and booking operations from the shared loop. */
 public final class ProjectCommands {
+    /** Token count for adding or modifying a room. */
     private static final int ROOM_CHANGE_SIZE = 4;
+    /** Token count for an availability search. */
     private static final int SEARCH_SIZE = 6;
+    /** Token limit that preserves the complete booking purpose. */
     private static final int BOOK_SIZE = 6;
+    /** Token limit that preserves the replacement booking purpose. */
     private static final int MODIFY_BOOKING_SIZE = 7;
 
+    /** Shared application model used by the command handler. */
     private final CROBS crobs;
+    /** Room collection belonging to this session. */
     private final roomManager rooms;
+    /** Live reservations used by operations and availability queries. */
     private final BookingManager bookings;
+    /** Output view for command results and errors. */
     private final CLIView view;
 
     /**
+     * Connects the shared command loop to the user, room and booking models.
+     *
      * @param crobs shared application model
      * @param view command output
      */
@@ -38,7 +48,14 @@ public final class ProjectCommands {
     }
 
     /**
+     * Executes a user, room or booking command and displays its result.
+     * Validation failures are reported by the surrounding command loop.
+     *
      * @param line the original line already recorded by the command loop
+     * @throws IllegalArgumentException if the arguments or requested values are invalid
+     * @throws IllegalStateException if the model cannot perform the operation
+     * @throws SecurityException if the user lacks the required access privileges
+     * @throws java.util.NoSuchElementException if a required room or booking is missing
      */
     public void execute(String line) {
         String[] args = CommandParser.parse(line);
@@ -61,8 +78,9 @@ public final class ProjectCommands {
                 if (!rooms.deleteRoom(args[1])) {
                     throw new IllegalArgumentException("Unknown room ID: " + args[1]);
                 }
-                bookings.cancelAllFutureBookingsOfRoomId(args[1]);
+                int cancelled = bookings.cancelAllFutureBookingsOfRoomId(args[1]);
                 view.showMessage("Room removed: " + args[1]);
+                view.showMessage("Future bookings cancelled: " + cancelled);
                 break;
             case "listRoom":
                 requireArgs(args, 2, "listRoom roomId");
@@ -99,6 +117,11 @@ public final class ProjectCommands {
         }
     }
 
+    /**
+     * Displays rooms meeting feature, capacity and time-availability constraints.
+     * @param args the search command and its five arguments
+     * @throws IllegalArgumentException if a search value or argument count is invalid
+     */
     private void search(String[] args) {
         requireArgs(args, SEARCH_SIZE, "search date startTime endTime minCapacity features");
         LocalDate date = TimeUtil.parseDate(args[1]);
@@ -113,6 +136,13 @@ public final class ProjectCommands {
         showRooms(available);
     }
 
+    /**
+     * Creates a reservation while preserving spaces in its purpose.
+     * @param line the original booking command
+     * @throws IllegalArgumentException if its syntax, values or requested slot are invalid
+     * @throws SecurityException if nobody is logged in
+     * @throws java.util.NoSuchElementException if the room is unknown
+     */
     private void book(String line) {
         String[] args = line.trim().split("\\s+", BOOK_SIZE);
         requireArgs(args, BOOK_SIZE, "book roomId date startTime endTime purpose");
@@ -120,6 +150,13 @@ public final class ProjectCommands {
         view.showMessage("Booking created: " + booking.getBookingId());
     }
 
+    /**
+     * Changes an owned reservation while preserving spaces in its purpose.
+     * @param line the original modification command
+     * @throws IllegalArgumentException if its syntax, values or replacement slot are invalid
+     * @throws SecurityException if the user cannot change the reservation
+     * @throws java.util.NoSuchElementException if a required ID is unknown
+     */
     private void modifyBooking(String line) {
         String[] args = line.trim().split("\\s+", MODIFY_BOOKING_SIZE);
         requireArgs(args, MODIFY_BOOKING_SIZE, "modifyBooking bookingID roomId date startTime endTime purpose");
@@ -127,6 +164,10 @@ public final class ProjectCommands {
         view.showMessage("Booking updated: " + booking.getBookingId());
     }
 
+    /**
+     * Displays room rows or an empty-result message.
+     * @param found the rooms to display in their supplied order
+     */
     private void showRooms(List<Room> found) {
         if (found.isEmpty()) {
             view.showMessage("No matching rooms.");
@@ -134,11 +175,19 @@ public final class ProjectCommands {
         found.forEach(this::showRoom);
     }
 
+    /**
+     * Displays one room with feature names in alphabetical order.
+     * @param room the room to display
+     */
     private void showRoom(Room room) {
         view.showMessage(room.getRoomId() + " | " + room.getRoomType() + " | capacity=" + room.getCapacity()
                 + " | features=" + room.getFeatures().stream().sorted().collect(Collectors.joining(",")));
     }
 
+    /**
+     * Checks authorization for room-management commands.
+     * @throws SecurityException if nobody is logged in or the user lacks admin privileges
+     */
     private void requireAdmin() {
         User user = crobs.getCurrentUser();
         if (user == null || !user.isAdmin()) {
@@ -146,6 +195,13 @@ public final class ProjectCommands {
         }
     }
 
+    /**
+     * Enforces a command's token count.
+     * @param args the parsed command tokens
+     * @param count the required token count
+     * @param syntax the syntax displayed on failure
+     * @throws IllegalArgumentException if the token count differs
+     */
     private static void requireArgs(String[] args, int count, String syntax) {
         if (args.length != count) {
             throw new IllegalArgumentException("Usage: " + syntax);
