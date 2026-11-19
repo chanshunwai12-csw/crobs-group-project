@@ -7,31 +7,30 @@ import java.time.format.DateTimeParseException;
 import java.time.format.ResolverStyle;
 import java.util.Locale;
 
-/** Shared parsing and validation for booking, search, and schedule commands. */
+/** Strict date, time and interval validation. */
 public final class TimeUtil {
-    /** Strict calendar-date pattern with a four-digit proleptic year. */
+    /** Four-digit proleptic-year date pattern. */
     private static final String DATE_PATTERN = "uuuu-MM-dd";
-    /** Strict 24-hour hour-and-minute pattern. */
+    /** 24-hour time pattern. */
     private static final String TIME_PATTERN = "HH:mm";
-    /** Validation response for invalid or incorrectly formatted dates. */
+    /** Invalid-date message. */
     private static final String INVALID_DATE = "Invalid date. Use yyyy-MM-dd.";
-    /** Locale-independent formatter that rejects invalid calendar dates. */
+    /** Strict locale-independent date formatter. */
     private static final DateTimeFormatter DATE_FORMATTER =
             DateTimeFormatter.ofPattern(DATE_PATTERN, Locale.ROOT).withResolverStyle(ResolverStyle.STRICT);
-    /** Locale-independent formatter for valid 24-hour times. */
+    /** Strict locale-independent time formatter. */
     private static final DateTimeFormatter TIME_FORMATTER =
             DateTimeFormatter.ofPattern(TIME_PATTERN, Locale.ROOT).withResolverStyle(ResolverStyle.STRICT);
 
-    /** Prevents instantiation of the shared date and time utilities. */
+    /** Prevents instantiation. */
     private TimeUtil() { }
 
     /**
-     * Parses a date using the four-digit year, month and day format.
-     * Rejects invalid calendar dates instead of adjusting them.
+     * Parses a strict yyyy-MM-dd date.
      *
-     * @param input date in yyyy-MM-dd form
+     * @param input date text
      * @return the parsed date
-     * @throws IllegalArgumentException if the input is not a valid date in the required form
+     * @throws IllegalArgumentException if input is null, invalid or incorrectly formatted
      */
     public static LocalDate parseDate(String input) {
         if (input == null || !input.matches("[0-9]{4}-[0-9]{2}-[0-9]{2}")) {
@@ -45,11 +44,11 @@ public final class TimeUtil {
     }
 
     /**
-     * Parses a time in the 24-hour, hour-and-minute format.
+     * Parses a 24-hour HH:mm time.
      *
-     * @param input time in 24-hour HH:mm form
+     * @param input time text
      * @return the parsed time
-     * @throws IllegalArgumentException if the input is not a valid time in the required form
+     * @throws IllegalArgumentException if input is null, invalid or incorrectly formatted
      */
     public static LocalTime parseTime(String input) {
         if (input == null) {
@@ -63,11 +62,11 @@ public final class TimeUtil {
     }
 
     /**
-     * Requires a same-day time slot with a start strictly before its end.
+     * Requires start to be earlier than end.
      *
-     * @param start the start time
-     * @param end the end time
-     * @throws IllegalArgumentException if the times do not form an increasing same-day slot
+     * @param start start time
+     * @param end end time
+     * @throws IllegalArgumentException if either time is null or end is not after start
      */
     public static void validateTimeRange(LocalTime start, LocalTime end) {
         if (start == null || end == null || !start.isBefore(end)) {

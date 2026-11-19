@@ -15,24 +15,23 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
-/** Entry point for the Crobs command-line application. */
+/** Crobs CLI entry point. */
 public final class Application {
-    /** Number of tokens in a launch option and its path. */
+    /** Tokens per launch option. */
     private static final int ARGUMENTS_PER_OPTION = 2;
-    /** Number of log destinations configured for a session. */
+    /** Number of log options. */
     private static final int LOG_OPTION_COUNT = 2;
-    /** Launch syntax shown when an option is invalid. */
+    /** Invalid-option usage message. */
     private static final String USAGE = "Usage: java hk.edu.polyu.comp.comp2021.crobs.Application"
             + " -html <log.html> -txt <log.txt>";
 
-    /** Prevents instantiation of the application entry point. */
+    /** Prevents instantiation. */
     private Application() { }
 
     /**
-     * Starts a command-line session and writes commands to the two log files.
-     * Reports invalid launch options or log failures on standard error.
+     * Runs the CLI and logs commands; reports startup errors to stderr.
      *
-     * @param args command-line options specifying the HTML and TXT log paths
+     * @param args log paths, or no options for default paths
      */
     public static void main(String[] args) {
         try {
@@ -56,11 +55,12 @@ public final class Application {
     }
 
     /**
-     * Validates launch options and connects the requested log destinations.
-     * @param args zero arguments or the two named log options and paths
-     * @param crobs the shared application model
-     * @return the configured session context
-     * @throws IllegalArgumentException if an option is unknown, duplicated, missing or invalid
+     * Validates log options and creates the session.
+     *
+     * @param args launch options
+     * @param crobs shared model
+     * @return the configured context
+     * @throws IllegalArgumentException if options or paths are invalid
      */
     private static CrobsContext parseContext(String[] args, CROBS crobs) {
         if (args.length == 0) {
@@ -86,11 +86,12 @@ public final class Application {
     }
 
     /**
-     * Connects query services to the live application state.
-     * @param htmlPath the HTML log destination
-     * @param txtPath the text log destination
-     * @param crobs the shared application model
-     * @return a context observing the current rooms, reservations and login
+     * Connects queries to live model data.
+     *
+     * @param htmlPath HTML log path
+     * @param txtPath TXT log path
+     * @param crobs shared model
+     * @return the session context
      */
     private static CrobsContext createContext(Path htmlPath, Path txtPath, CROBS crobs) {
         return new CrobsContext(htmlPath, txtPath, roomId -> crobs.getRoomManager().getRoom(roomId) != null,

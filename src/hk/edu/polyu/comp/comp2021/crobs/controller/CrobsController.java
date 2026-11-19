@@ -12,37 +12,37 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-/** Runs the shared command loop and dispatches the C2 commands. */
+/** Logs commands and dispatches schedules, quit and other operations. */
 public final class CrobsController {
-    /** Token count for a weekly schedule query. */
+    /** Schedule command token count. */
     private static final int SCHEDULE_TOKEN_COUNT = 3;
-    /** Shared session data used by this component. */
+    /** Shared session context. */
     private final CrobsContext context;
-    /** Weekly schedule queries for the shared session. */
+    /** Weekly schedule service. */
     private final ScheduleService schedules;
-    /** Output view for command results and errors. */
+    /** Command output. */
     private final CLIView view;
-    /** Handler for commands provided by the other modules. */
+    /** Handler for other commands. */
     private final Consumer<String> otherCommands;
 
     /**
-     * Creates a command loop that handles schedules, quit and unknown commands.
+     * Handles schedules, quit and unknown commands.
      *
-     * @param context the shared Crobs session
-     * @param view output for command results and errors
-     * @throws NullPointerException if the context or view is {@code null}
+     * @param context shared session
+     * @param view command output
+     * @throws NullPointerException if either argument is null
      */
     public CrobsController(CrobsContext context, CLIView view) {
         this(context, view, line -> view.showError("Unknown command: " + CommandParser.parse(line)[0]));
     }
 
     /**
-     * Creates a command loop connected to the other modules' command handler.
+     * Connects the loop to the other command handlers.
      *
-     * @param context the shared Crobs session
-     * @param view output for command results and errors
+     * @param context shared session
+     * @param view command output
      * @param otherCommands handler for user, room and booking commands
-     * @throws NullPointerException if any argument is {@code null}
+     * @throws NullPointerException if any argument is null
      */
     public CrobsController(CrobsContext context, CLIView view, Consumer<String> otherCommands) {
         this.context = Objects.requireNonNull(context);
@@ -52,10 +52,10 @@ public final class CrobsController {
     }
 
     /**
-     * Logs every nonblank line before dispatch and ends on quit or end of input.
+     * Logs and dispatches nonblank lines until quit or EOF.
      *
-     * @param input the command input stream
-     * @throws IOException if the input or either log fails
+     * @param input command input
+     * @throws IOException if reading or logging fails
      */
     public void run(BufferedReader input) throws IOException {
         try (CommandLogger logger = new CommandLogger(context.getHtmlLogPath(), context.getTxtLogPath())) {
@@ -74,10 +74,11 @@ public final class CrobsController {
     }
 
     /**
-     * Routes one logged command and reports expected validation failures.
-     * @param command the tokenized nonblank command
-     * @param line the original input for handlers that preserve free text
-     * @return whether the command loop should continue
+     * Dispatches a logged command and reports validation errors.
+     *
+     * @param command parsed tokens
+     * @param line original input
+     * @return whether to continue the loop
      */
     private boolean dispatch(String[] command, String line) {
         try {
@@ -102,9 +103,10 @@ public final class CrobsController {
     }
 
     /**
-     * Validates and displays a weekly room schedule.
-     * @param command the schedule command and its room and date arguments
-     * @throws IllegalArgumentException if the syntax, room or date is invalid
+     * Validates and displays a weekly schedule.
+     *
+     * @param command schedule command tokens
+     * @throws IllegalArgumentException if syntax, room or date is invalid
      * @throws IllegalStateException if nobody is logged in
      */
     private void showSchedule(String[] command) {

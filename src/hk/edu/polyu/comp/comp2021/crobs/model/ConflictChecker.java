@@ -5,40 +5,39 @@ import java.time.LocalTime;
 import java.util.Collection;
 import java.util.Objects;
 
-/** Checks room availability against the live booking collection. */
+/** Checks time conflicts against live bookings. */
 public final class ConflictChecker {
-    /** Live reservations used by operations and availability queries. */
+    /** Live bookings. */
     private final Collection<? extends BookingInfo> bookings;
 
     /**
-     * Connects the checker to the session's live collection of bookings.
+     * Uses the context's live bookings.
      *
-     * @param context the shared Crobs session
-     * @throws NullPointerException if the context is {@code null}
+     * @param context shared session
+     * @throws NullPointerException if the context is null
      */
     public ConflictChecker(CrobsContext context) {
         this(context.getAllBookings());
     }
 
     /**
-     * Connects the checker directly to a live collection of bookings.
+     * Uses a live booking collection.
      *
-     * @param bookings live bookings used by the application model
-     * @throws NullPointerException if the collection is {@code null}
+     * @param bookings live bookings
+     * @throws NullPointerException if the collection is null
      */
     public ConflictChecker(Collection<? extends BookingInfo> bookings) {
         this.bookings = Objects.requireNonNull(bookings);
     }
 
     /**
-     * Checks whether an active booking overlaps the requested room and time slot.
-     * A booking ending at the requested start time does not overlap.
+     * Checks active bookings for overlap; adjacent slots are allowed.
      *
-     * @param roomId room to check
-     * @param date requested booking date
-     * @param start requested start time
-     * @param end requested end time
-     * @return whether an active booking overlaps the requested slot
+     * @param roomId requested room
+     * @param date requested date
+     * @param start inclusive start
+     * @param end exclusive end
+     * @return whether the slot conflicts
      * @throws IllegalArgumentException if the time range is invalid
      */
     public boolean isTimeConflict(String roomId, LocalDate date, LocalTime start, LocalTime end) {
@@ -46,14 +45,14 @@ public final class ConflictChecker {
     }
 
     /**
-     * Checks a slot while excluding the booking being changed.
+     * Checks overlap, excluding the booking being modified.
      *
-     * @param roomId room to check
-     * @param date requested booking date
-     * @param start requested start time
-     * @param end requested end time
-     * @param ignoredBookingId ID of the existing booking to exclude, or null
-     * @return whether another active booking overlaps the requested slot
+     * @param roomId requested room
+     * @param date requested date
+     * @param start inclusive start
+     * @param end exclusive end
+     * @param ignoredBookingId booking to exclude, or null
+     * @return whether another booking conflicts
      * @throws IllegalArgumentException if the time range is invalid
      */
     public boolean isTimeConflict(String roomId, LocalDate date, LocalTime start, LocalTime end,

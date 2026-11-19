@@ -8,30 +8,30 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
-/** Writes the same command sequence to an HTML table and a UTF-8 text file. */
+/** Writes commands to UTF-8 HTML and TXT logs. */
 public final class CommandLogger implements AutoCloseable {
-    /** Error shown when both logs resolve to the same destination. */
+    /** Error for identical log destinations. */
     private static final String SAME_LOG_FILE = "HTML and TXT logs must use different files.";
-    /** HTML document and command-table header written when a session starts. */
+    /** HTML document and table header. */
     private static final String HTML_HEADER = "<!doctype html>\n<html lang=\"en\"><head>"
             + "<meta charset=\"utf-8\"><title>Crobs command log</title></head>\n<body><table>\n"
             + "<thead><tr><th scope=\"col\">Index</th><th scope=\"col\">Command</th></tr></thead>\n<tbody>\n";
-    /** Markup that closes the command table and document. */
+    /** HTML closing markup. */
     private static final String HTML_FOOTER = "</tbody>\n</table></body></html>\n";
 
-    /** Writable channel for the HTML command table. */
+    /** HTML log channel. */
     private final FileChannel htmlLog;
-    /** Writable channel for the plain-text command log. */
+    /** TXT log channel. */
     private final FileChannel txtLog;
-    /** One-based index of the next logged operation. */
+    /** Next one-based operation index. */
     private long nextIndex = 1;
 
     /**
-     * Opens the two log files for a new session.
+     * Starts fresh logs at two distinct paths.
      *
-     * @param htmlPath path to the HTML log
-     * @param txtPath path to the text log
-     * @throws IOException if the files cannot be opened or have the same destination
+     * @param htmlPath HTML log path
+     * @param txtPath TXT log path
+     * @throws IOException if a file cannot open or both paths name the same file
      */
     public CommandLogger(Path htmlPath, Path txtPath) throws IOException {
         if (htmlPath.toAbsolutePath().normalize().equals(txtPath.toAbsolutePath().normalize())) {
@@ -64,10 +64,10 @@ public final class CommandLogger implements AutoCloseable {
     }
 
     /**
-     * Records one unmodified input line in both logs.
+     * Writes the original command to both logs; rolls back failed writes.
      *
-     * @param command the input line, without its line separator
-     * @throws IOException if either log write fails
+     * @param command input line without its line separator
+     * @throws IOException if either write fails
      */
     public synchronized void log(String command) throws IOException {
         long htmlPosition = htmlLog.position();
@@ -85,9 +85,9 @@ public final class CommandLogger implements AutoCloseable {
     }
 
     /**
-     * Finishes the HTML table and closes both logs.
+     * Finishes the HTML document and closes both logs.
      *
-     * @throws IOException if finishing or closing a log fails
+     * @throws IOException if finishing or closing fails
      */
     @Override
     public synchronized void close() throws IOException {
@@ -106,19 +106,21 @@ public final class CommandLogger implements AutoCloseable {
     }
 
     /**
-     * Opens a writable log without truncating existing content.
-     * @param path the destination path
-     * @return the opened channel
-     * @throws IOException if the destination cannot be opened
+     * Opens a log without truncating it.
+     *
+     * @param path log path
+     * @return the writable channel
+     * @throws IOException if the file cannot open
      */
     private static FileChannel openLog(Path path) throws IOException {
         return FileChannel.open(path, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
     }
 
     /**
-     * Writes the entire UTF-8 representation of a string, including partial writes.
-     * @param file the destination channel
-     * @param text the text to encode and write
+     * Writes all UTF-8 bytes, retrying partial writes.
+     *
+     * @param file output channel
+     * @param text text to write
      * @throws IOException if writing fails or makes no progress
      */
     private static void write(FileChannel file, String text) throws IOException {
@@ -131,10 +133,11 @@ public final class CommandLogger implements AutoCloseable {
     }
 
     /**
-     * Restores a log's position after a failed command write.
-     * @param file the affected log channel
-     * @param position its position before the command
-     * @param failure the original failure to which rollback errors are attached
+     * Restores the log position and attaches any rollback error.
+     *
+     * @param file affected channel
+     * @param position position before writing
+     * @param failure original write error
      */
     private static void rollback(FileChannel file, long position, IOException failure) {
         try {
@@ -146,9 +149,10 @@ public final class CommandLogger implements AutoCloseable {
     }
 
     /**
-     * Closes a channel while preserving the original failure.
-     * @param file the channel to close
-     * @param failure the original failure to which close errors are attached
+     * Closes a channel and attaches any close error.
+     *
+     * @param file channel to close
+     * @param failure original error
      */
     private static void closeAfterFailure(FileChannel file, Throwable failure) {
         try {
@@ -159,9 +163,10 @@ public final class CommandLogger implements AutoCloseable {
     }
 
     /**
-     * Escapes command text before placing it in the HTML table.
-     * @param command the original command line
-     * @return text safe for inclusion inside the table cell
+     * Escapes command text for HTML.
+     *
+     * @param command original command
+     * @return HTML-safe text
      */
     private static String escapeHtml(String command) {
         return command.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")

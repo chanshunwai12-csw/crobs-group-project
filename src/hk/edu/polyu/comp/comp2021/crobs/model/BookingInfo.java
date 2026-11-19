@@ -3,52 +3,44 @@ package hk.edu.polyu.comp.comp2021.crobs.model;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
-/** Booking fields used by room availability and the weekly schedule. */
+/** Booking data for schedules and conflict checks. */
 public interface BookingInfo {
-    /**
-     * Identifies this booking within the session.
-     * @return the unique booking ID
+    /** Booking identifier.
+     * @return the booking ID
      */
     String getBookingId();
 
-    /**
-     * Identifies the room reserved by this booking.
-     * @return the booked room ID
+    /** Reserved room.
+     * @return the room ID
      */
     String getRoomId();
 
-    /**
-     * Identifies the user who owns this booking.
-     * @return the owner user ID
+    /** Booking owner.
+     * @return the owner ID
      */
     String getUserId();
 
-    /**
-     * Supplies the calendar date used for conflict and schedule queries.
+    /** Reservation date.
      * @return the booking date
      */
     LocalDate getDate();
 
-    /**
-     * Supplies the beginning of the reserved time slot.
-     * @return the start time on the booking date
+    /** Inclusive slot start.
+     * @return the inclusive start time
      */
     LocalTime getStartTime();
 
-    /**
-     * Supplies the exclusive end of the reserved time slot.
-     * @return the end time on the booking date
+    /** Exclusive slot end.
+     * @return the exclusive end time
      */
     LocalTime getEndTime();
 
-    /**
-     * Supplies the purpose displayed in the weekly schedule.
-     * @return the recorded purpose
+    /** Reservation purpose.
+     * @return the booking purpose
      */
     String getPurpose();
 
-    /**
-     * Indicates whether availability and schedule queries should include this booking.
+    /** Booking status.
      * @return whether the booking is active
      */
     boolean isActive();

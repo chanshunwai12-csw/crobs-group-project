@@ -6,27 +6,27 @@ import java.io.PrintWriter;
 import java.util.List;
 import java.util.Objects;
 
-/** Prints command responses to the console. */
+/** Console output for command results. */
 public final class CLIView {
-    /** Writer used to display command responses. */
+    /** Output writer. */
     private final PrintWriter output;
 
     /**
-     * Creates a view that writes command responses to the supplied writer.
+     * Sets the command output writer.
      *
-     * @param output the command-output writer
-     * @throws NullPointerException if the writer is {@code null}
+     * @param output output writer
+     * @throws NullPointerException if the writer is null
      */
     public CLIView(PrintWriter output) {
         this.output = Objects.requireNonNull(output);
     }
 
     /**
-     * Prints a weekly schedule using the owner IDs allowed by the model.
+     * Prints schedule rows with the supplied owner visibility.
      *
-     * @param roomId room shown in the schedule
-     * @param entries booking rows with any restricted user IDs already removed
-     * @throws NullPointerException if the entries list or one of its entries is {@code null}
+     * @param roomId displayed room
+     * @param entries permission-filtered schedule rows
+     * @throws NullPointerException if the list or an entry is null
      */
     public void showSchedule(String roomId, List<ScheduleEntry> entries) {
         output.println("Schedule for room " + roomId);
@@ -45,25 +45,25 @@ public final class CLIView {
     }
 
     /**
-     * Prints a validation or access error and flushes the output.
+     * Prints and flushes an error.
      *
-     * @param message the user-facing error message
+     * @param message error message
      */
     public void showError(String message) {
         showMessage("Error: " + message);
     }
 
     /**
-     * Prints a command result and flushes the output.
+     * Prints and flushes a message.
      *
-     * @param message the command result or session information
+     * @param message output text
      */
     public void showMessage(String message) {
         output.println(message);
         output.flush();
     }
 
-    /** Prints confirmation that the session is ending. */
+    /** Prints the quit confirmation. */
     public void showGoodbye() {
         output.println("Goodbye.");
         output.flush();

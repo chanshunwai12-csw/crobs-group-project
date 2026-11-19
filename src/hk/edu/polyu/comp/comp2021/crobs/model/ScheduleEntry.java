@@ -3,29 +3,29 @@ package hk.edu.polyu.comp.comp2021.crobs.model;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
-/** Booking details that may be printed for the current viewer. */
+/** Schedule row with controlled owner-ID visibility. */
 public final class ScheduleEntry {
-    /** Identifier of the represented reservation. */
+    /** Booking ID. */
     private final String bookingId;
-    /** Calendar date of the reservation. */
+    /** Booking date. */
     private final LocalDate date;
-    /** Inclusive beginning of the reservation time slot. */
+    /** Inclusive start time. */
     private final LocalTime startTime;
-    /** Exclusive end of the reservation time slot. */
+    /** Exclusive end time. */
     private final LocalTime endTime;
-    /** Purpose displayed with the reservation. */
+    /** Booking purpose. */
     private final String purpose;
-    /** Account ID associated with this command or display row. */
+    /** Owner ID. */
     private final String userId;
-    /** Whether the display row may expose its owner ID. */
+    /** Whether the owner ID is visible. */
     private final boolean showUserId;
 
     /**
-     * Copies a booking's display fields and applies the owner's visibility rule.
+     * Copies booking details and owner visibility.
      *
-     * @param booking the source booking
-     * @param showUserId whether the viewer is allowed to see the owner ID
-     * @throws NullPointerException if the booking is {@code null}
+     * @param booking source booking
+     * @param showUserId whether to reveal its owner ID
+     * @throws NullPointerException if the booking is null
      */
     ScheduleEntry(BookingInfo booking, boolean showUserId) {
         bookingId = booking.getBookingId();
@@ -37,49 +37,43 @@ public final class ScheduleEntry {
         this.showUserId = showUserId;
     }
 
-    /**
-     * Identifies the booking represented by this display row.
+    /** Booking identifier.
      * @return the booking ID
      */
     public String getBookingId() {
         return bookingId;
     }
 
-    /**
-     * Supplies the date displayed in the schedule row.
+    /** Reservation date.
      * @return the booking date
      */
     public LocalDate getDate() {
         return date;
     }
 
-    /**
-     * Supplies the beginning of the displayed time slot.
-     * @return the start time
+    /** Inclusive slot start.
+     * @return the inclusive start time
      */
     public LocalTime getStartTime() {
         return startTime;
     }
 
-    /**
-     * Supplies the exclusive end of the displayed time slot.
-     * @return the end time
+    /** Exclusive slot end.
+     * @return the exclusive end time
      */
     public LocalTime getEndTime() {
         return endTime;
     }
 
-    /**
-     * Supplies the booking purpose displayed alongside the time slot.
-     * @return the purpose
+    /** Reservation purpose.
+     * @return the booking purpose
      */
     public String getPurpose() {
         return purpose;
     }
 
-    /**
-     * Supplies the owner ID after applying the viewer's access privileges.
-     * @return the owner ID if visible, or {@code null}
+    /** Visible booking owner.
+     * @return the owner ID if visible, otherwise null
      */
     public String getVisibleUserId() {
         return showUserId ? userId : null;
